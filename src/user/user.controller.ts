@@ -2,6 +2,8 @@ import { Controller, Get, Put, Param, ParseUUIDPipe, Post, Body } from '@nestjs/
 import { UserService } from 'src/user/user.service'
 import { CreateUserDto, FindUserResponseDto, UserResponseDto, UpdateUserDto,LoginUserDto } from './dto/user.dto';
 import {} from '@nestjs/swagger'
+import {User} from "./entity/user.entity";
+
 @Controller('User/')
 export class UserController {
     
@@ -9,9 +11,9 @@ export class UserController {
     constructor(private readonly userService: UserService){}
 
     @Get()
-    getUsers():FindUserResponseDto[]{
+    getUsers():Promise <User>{
 
-        return this.userService.getUsers()
+        return this.userService.create("banar");
     }
 
     @Get()
@@ -44,5 +46,12 @@ export class UserController {
     ):UserResponseDto {
      return this.userService.login(body)
     }
-  
+
+
+
+    
+
+
+
+    
 }

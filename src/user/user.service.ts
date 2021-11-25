@@ -3,7 +3,7 @@ import { CreateUserDto, FindUserResponseDto, UserResponseDto, UpdateUserDto, Log
 import{v4 as uuid} from "uuid"
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {User} from "../entity/user";
+import {User} from "./entity/user.entity";
 
 @Injectable()
 export class UserService {
@@ -32,24 +32,30 @@ export class UserService {
     }
 
 
-    constructor(
-        @InjectRepository(User)
-        private usersRepository: Repository<User>,
-      ) {}
-    
-      findAll(): Promise<User[]> {
-        return this.usersRepository.find();
-      }
-    
-      findOne(id: string): Promise<User> {
-        return this.usersRepository.findOne(id);
-      }
-    
-      async remove(id: string): Promise<void> {
-        await this.usersRepository.delete(id);
-      }
+        constructor(
+          @InjectRepository(User)
+          private usersRepository: Repository<User>,
+        ) {}
+      
+        findAll(): Promise<User[]> {
+          return this.usersRepository.find();
+        }
+      
+        findOne(id: string): Promise<User> {
+          return this.usersRepository.findOne(id);
+        }
+      
+        async remove(id: string): Promise<void> {
+          await this.usersRepository.delete(id);
+        }
 
-   
+
+
+  
+        create(username: string): Promise<User> {
+            const newUser = this.usersRepository.create({username});
+            return this.usersRepository.save(newUser);
+        }
   
   
 }
