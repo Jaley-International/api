@@ -1,25 +1,24 @@
-export class FindUserResponseDto{
-    id:string;
-    username:string;
+import { IsEmail,  IsNotEmpty, IsString} from "class-validator";
 
-}
-
-export class UserResponseDto{
-    username:string;  
-}
 
 export class LoginUserDto{
-    id:string;
-    username:string;
-}
+   
+   
+    @IsEmail()
+    email: string; 
 
-export class CreateUserDto{
-    emailaddress:string;
-    username:string;
+    @IsNotEmpty()
     password:string;
 }
 
+export class CreateUserDto extends LoginUserDto{
+    @IsString()
+    name: string; 
 
-export class UpdateUserDto{
-    username:string;
 }
+
+
+
+
+
+

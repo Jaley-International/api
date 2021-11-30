@@ -1,57 +1,34 @@
-import { Controller, Get, Put, Param, ParseUUIDPipe, Post, Body } from '@nestjs/common';
-import { UserService } from 'src/user/user.service'
-import { CreateUserDto, FindUserResponseDto, UserResponseDto, UpdateUserDto,LoginUserDto } from './dto/user.dto';
-import {} from '@nestjs/swagger'
-import {User} from "./entity/user.entity";
+import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { get } from 'http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { LoginUserDto,CreateUserDto} from '../user/dto/user.dto';
+import { UserI } from '../user/user.interface';
+import { UserService } from '../user/user.service';
 
-@Controller('User/')
+@Controller('users')
 export class UserController {
+
+    constructor(private userService: UserService) {}
+
+    @Post()
+    create(@Body() createdUserDto: CreateUserDto): Observable<UserI> {
+        return this.userService.create(createdUserDto);
+    }
+
+
     
-
-    constructor(private readonly userService: UserService){}
-
-    @Get()
-    getUsers():Promise <User>{
-
-        return this.userService.create("banar");
+    @Post('login')
+    @HttpCode(200)
+    login(@Body() LoginUserDto: LoginUserDto): Observable<string> {
+        return this.userService.login(LoginUserDto);
     }
 
     @Get()
-    getuser(
-        @Param('userId',new ParseUUIDPipe) userId: string 
-    ):FindUserResponseDto[]{
-       return this.userService.getUserbyId(userId);
-    }
-    
-    @Post('/register')
-
-    createUser(
-        @Body() body : CreateUserDto
-    ):UserResponseDto {
-     return this.userService.createUser(body)
-    }
-
-    
-    @Get('/login/salt')
-    LoginUserGetSalt(
-        @Body() body : LoginUserDto
-    ):UserResponseDto {
-     return this.userService.login(body)
-    }
-
-     
-    @Get('/login/auth')
-    LoginUserGetAuthToken(
-        @Body() body : LoginUserDto
-    ):UserResponseDto {
-     return this.userService.login(body)
+    findAll(@Req() request): Observable<UserI[]> {
+        return this.userService.findAll();
     }
 
 
-
-    
-
-
-
-    
+   
 }

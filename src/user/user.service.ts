@@ -1,64 +1,88 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto, FindUserResponseDto, UserResponseDto, UpdateUserDto, LoginUserDto } from './dto/user.dto';
-import{v4 as uuid} from "uuid"
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { from, Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { AuthService } from 'src/auth/services/auth/auth.service';
 import { Repository } from 'typeorm';
-import {User} from "./entity/user.entity";
+import { UserEntity } from '../user/entity/user.entity';
+import { LoginUserDto,CreateUserDto} from '../user/dto/user.dto';
+import { UserI } from '../user/user.interface';
 
 @Injectable()
 export class UserService {
+   
 
+    constructor(
+        @InjectRepository(UserEntity)
+        private userRepository: Repository<UserEntity>,
+        private authService: AuthService
+    ) { }
 
-    login(payload: LoginUserDto): UserResponseDto {
-        throw new Error('Method not implemented.');
+    create(createdUserDto: CreateUserDto): Observable<UserI> {
+        return this.mailExists(createdUserDto.email).pipe(
+            switchMap((exists: boolean) => {
+                if (!exists) {  
+                    return this.authService.hashPassword(createdUserDto.password).pipe(
+                        switchMap((passwordHash: string) => {
+                            // Overwrite the user password with the hash, to store it in the db
+                            createdUserDto.password = passwordHash;
+                            return from(this.userRepository.save(createdUserDto)).pipe(
+                                map((savedUser: UserI) => {
+                                    const { password, ...user} = savedUser;
+                                    return user;
+                                })
+                            )
+                        })
+                    )
+                } else {
+                    throw new HttpException('Email already in use', HttpStatus.CONFLICT);
+                }
+            })
+        )
     }
-    getUserbyId(userId: string): FindUserResponseDto[] {
-        throw new Error('Method not implemented.');
+
+    login(loginUserDto: LoginUserDto): Observable<string> {
+        return this.findUserByEmail(loginUserDto.email).pipe(
+            switchMap((user:UserI)=> this.validatePassword(loginUserDto.password,user.password).pipe(
+                map((passwordsMatches:boolean)=>{
+                    if (passwordsMatches) {
+                        return 'login successfull'
+                    } else 
+                    {
+                        throw new HttpException('login was not successfull!',HttpStatus.UNAUTHORIZED)
+                    }
+                })
+            ))
+        )
+        
     }
 
-    getUsers(): FindUserResponseDto[] {
-        throw new Error('Method not implemented.');
+    findAll(): Observable<UserI[]> {
+        return from(this.userRepository.find());
     }
 
-   private users;
-    
-    createUser(payload :CreateUserDto):UserResponseDto{
-        let newUser = {
-         id: uuid(),
-         ...payload
-        }
-        this.users.push(newUser);
-        return newUser;
+    findOne(id: number): Observable<UserI> {
+        return from(this.userRepository.findOne({ id }));
     }
 
+    private findUserByEmail(email: string): Observable<UserI> {
+        return from(this.userRepository.findOne({ email }, { select: ['id', 'email', 'name', 'password'] }));
+    }
 
-        constructor(
-          @InjectRepository(User)
-          private usersRepository: Repository<User>,
-        ) {}
-      
-        findAll(): Promise<User[]> {
-          return this.usersRepository.find();
-        }
-      
-        findOne(id: string): Promise<User> {
-          return this.usersRepository.findOne(id);
-        }
-      
-        async remove(id: string): Promise<void> {
-          await this.usersRepository.delete(id);
-        }
+    private validatePassword(password: string, storedPasswordHash: string): Observable<boolean> {
+        return this.authService.comparePasswords(password, storedPasswordHash);
+    }
 
+    private mailExists(email: string): Observable<boolean> {
+        return from(this.userRepository.findOne({ email })).pipe(
+            map((user: UserI) => {
+                if (user) {
+                    return true;
+                } else {
+                    return false;
+                }
+            })
+        )
+    }
 
-
-  
-        create(username: string): Promise<User> {
-            const newUser = this.usersRepository.create({username});
-            return this.usersRepository.save(newUser);
-        }
-  
-  
 }
-
-
-
