@@ -5,15 +5,27 @@ export class UserEntity {
   @ObjectIdColumn() 
   id: ObjectID; 
 
+  @Column({unique:true})
+  username: string;
+
   @Column()
-  name: string;
+  clientRandomValue: string;
+
+  @Column()
+  encryptedMasterKey: string;
+
+  @Column()
+  hashedAuthenticationKey: string;
+
+  @Column()
+  encryptedRsaPrivateSharingKey: string;
+
+  @Column()
+  rsaPublicSharingKey: string;
 
   @Column({unique:true})
   email: string;
 
-
-  @Column({select:false})
-  password: string;
 
   @BeforeInsert()
   emailtolowercase(){
