@@ -10,6 +10,16 @@ export class LoginUserDto {
 
 }
 
+
+export class LoginUserDto2 extends LoginUserDto {
+
+
+    @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+    derivedAuthenticationKey: string;
+
+
+}
+
 export class CreateUserDto {
 
     @Matches(/^[0-9a-zA-Z-]{3,16}$/)
@@ -35,6 +45,15 @@ export class CreateUserDto {
 
 
 }
+
+export class userSaltDto {
+
+    @IsString()
+    salt: string;
+
+
+}
+
 
 
 

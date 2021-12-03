@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
-import { map, Observable } from 'rxjs';
+import { map, Observable, sampleTime } from 'rxjs';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CustomStrategy } from 'src/auth/strategies/custom.strategy';
 import { LoginUserDto,CreateUserDto} from '../user/dto/user.dto';
 import { UserI } from '../user/user.interface';
 import { UserService } from '../user/user.service';
@@ -18,11 +19,14 @@ export class UserController {
 
 
     
-   // @Post('login')
-   // @HttpCode(200)
-   // login(@Body() LoginUserDto: LoginUserDto): Observable<string> {
-   //     return this.userService.login(LoginUserDto);
-   // }
+    @Post('login')
+    @HttpCode(200)
+    login(@Body() LoginUserDto: LoginUserDto): Observable<any> {
+
+        const salt = this.userService.login(LoginUserDto);
+        console.log(salt)
+        return salt
+    }
 
     // @Post('login')
     // @HttpCode(200)
@@ -38,7 +42,7 @@ export class UserController {
     //     );
     // }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(CustomStrategy)
     @Get()
     findAll(@Req() request): Observable<UserEntity[]> {
         console.log(request.user);

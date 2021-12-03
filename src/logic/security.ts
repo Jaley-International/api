@@ -30,3 +30,18 @@ export  function addPadding(str: string, length: number): string {
     return forge.md.sha256.create().update(str).digest().toHex();
 }
 
+
+
+
+/**
+ * Hash using SHA256 the input string
+ * @param {string}      str             String to be hashed.
+ * @return {string}
+ */
+ export function sha512(str: string): Hex {
+    return forge.md.sha512.create().update(str).digest().toHex();
+}
+
+
+
+
