@@ -38,9 +38,27 @@ export  function addPadding(str: string, length: number): string {
  * @param {string}      str             String to be hashed.
  * @return {string}
  */
- export function sha512(str: string): Hex {
-    return forge.md.sha512.create().update(str).digest().toHex();
+export function sha512(str: string): Hex {
+return forge.md.sha512.create().update(str).digest().toHex();
 }
+
+
+
+export function generateSessionIdentifier():Hex
+{
+return forge.util.bytesToHex(forge.random.getBytesSync(32));
+
+}
+
+export function rsaPublicEncrypt(key:string,value:Hex):Hex
+{
+const publicKey = forge.pki.publicKeyFromPem(key);
+return forge.util.bytesToHex( publicKey.encrypt(forge.util.hexToBytes(value)));
+
+
+}
+
+
 
 
 

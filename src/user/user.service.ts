@@ -5,9 +5,8 @@ import { map, switchMap } from 'rxjs/operators';
 import { AuthService } from 'src/auth/services/auth/auth.service';
 import { ObjectID, Repository } from 'typeorm';
 import { UserEntity } from '../user/entity/user.entity';
-import { LoginUserDto, CreateUserDto, LoginUserDto2} from '../user/dto/user.dto';
-import { INSTANCE_ID, SERVER_RANDOM_VALUE, sha256,sha512, addPadding } from 'src/logic/security';
-
+import { LoginUserDto, CreateUserDto, LoginUserDto2, loginResponseDto} from '../user/dto/user.dto';
+import { INSTANCE_ID, SERVER_RANDOM_VALUE, sha256,sha512, addPadding, generateSessionIdentifier, rsaPublicEncrypt } from 'src/logic/security';
 @Injectable()
 export class UserService {
 
@@ -58,12 +57,29 @@ export class UserService {
     }
 
     
-    login2(loginUserDto2: LoginUserDto2): Observable<string> {
+    login2(loginUserDto2: LoginUserDto2): Observable<any> {
         return this.findUser(loginUserDto2.username).pipe(
             map((user: UserEntity) => {
                 if (user !== null) {
                     const  key = sha512(loginUserDto2.derivedAuthenticationKey);  
-                    console.log(key)
+
+                    if (key === user.hashedAuthenticationKey)
+                    {
+                    
+
+                        const session = generateSessionIdentifier();
+                        user.sessionIdentifiers.push(session);
+                         this.userRepository.save(user);
+
+                        const res = new loginResponseDto();
+                        res.encryptedMasterKey=user.encryptedMasterKey;
+                        res.encryptedRsaPrivateSharingKey=user.encryptedRsaPrivateSharingKey;
+                        res.rsaPublicSharingKey=user.rsaPublicSharingKey;
+                        res.encryptedSessionIdentifier=rsaPublicEncrypt(user.rsaPublicSharingKey,session);
+                        return res;
+                        
+
+                    }
                     
                     return key      
                 } else {

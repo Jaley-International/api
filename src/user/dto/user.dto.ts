@@ -14,7 +14,7 @@ export class LoginUserDto {
 export class LoginUserDto2 extends LoginUserDto {
 
 
-    @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+    @Matches(/^[0-9a-f]{64}$/)
     derivedAuthenticationKey: string;
 
 
@@ -43,6 +43,8 @@ export class CreateUserDto {
     @IsEmail()
     email: string;
 
+    sessionIdentifiers:string[];
+
 
 }
 
@@ -50,9 +52,40 @@ export class userSaltDto {
 
     @IsString()
     salt: string;
+}
+
+
+export class loginResponseDto {
+
+
+
+
+    @Matches(/^[0-9a-f]{128}$/)
+    encryptedMasterKey: string;
+
+
+    
+    @Matches(/^[0-9a-f]+$/)
+    encryptedRsaPrivateSharingKey: string;
+
+ 
+
+    @IsString()
+    rsaPublicSharingKey: string;
+
+    @IsString()
+    encryptedSessionIdentifier: string;
+
+
+
+
+
+
 
 
 }
+
+
 
 
 

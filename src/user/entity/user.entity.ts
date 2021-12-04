@@ -28,6 +28,11 @@ export class UserEntity {
 
 
   @BeforeInsert()
+  @Column("string", { array: true })
+  sessionIdentifiers: string[];
+
+
+  @BeforeInsert()
   emailtolowercase(){
     this.email = this.email.toLocaleLowerCase()
   }

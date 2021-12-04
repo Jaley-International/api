@@ -2,8 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/c
 import { map, Observable, sampleTime } from 'rxjs';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CustomStrategy } from 'src/auth/strategies/custom.strategy';
-import { LoginUserDto,CreateUserDto} from '../user/dto/user.dto';
-import { UserI } from '../user/user.interface';
+import { LoginUserDto,LoginUserDto2,CreateUserDto, loginResponseDto} from '../user/dto/user.dto';
 import { UserService } from '../user/user.service';
 import { UserEntity } from './entity/user.entity';
 
@@ -19,11 +18,21 @@ export class UserController {
 
 
     
-    @Post('login')
+    @Post('getSalt')
     @HttpCode(200)
     login(@Body() LoginUserDto: LoginUserDto): Observable<any> {
 
         const salt = this.userService.login(LoginUserDto);
+        console.log(salt)
+        return salt
+    }
+
+
+    @Post('login')
+    @HttpCode(200)
+    login2(@Body() LoginUserDto2: LoginUserDto2): Observable<any> {
+
+        const salt = this.userService.login2(LoginUserDto2);
         console.log(salt)
         return salt
     }
