@@ -99,7 +99,10 @@ export class UserService {
             return res;
           }
 
-          return key;
+          throw new HttpException(
+            'Invalid credentials',
+            HttpStatus.UNAUTHORIZED,
+          );
         } else {
           throw new HttpException(
             'Invalid credentials',

@@ -33,8 +33,8 @@ export class UserEntity {
   email: string;
 
   @BeforeInsert()
-  @Column('string', { array: true, default: [] })
-  sessionIdentifiers: string[];
+  @Column({ array: true, default: [] })
+  sessionIdentifiers: string[] = [];
 
   @BeforeInsert()
   emailToLowercase() {
