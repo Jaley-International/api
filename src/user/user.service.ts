@@ -101,9 +101,10 @@ export class UserService {
 
           return key;
         } else {
-          const key = sha512(loginUserDto2.derivedAuthenticationKey);
-          console.log(key);
-          return key;
+          throw new HttpException(
+            'Invalid credentials',
+            HttpStatus.UNAUTHORIZED,
+          );
         }
       }),
     );
