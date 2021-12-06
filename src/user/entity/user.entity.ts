@@ -1,11 +1,17 @@
-import { BeforeInsert, Column, Entity, ObjectID, ObjectIdColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  Column,
+  Entity,
+  ObjectID,
+  ObjectIdColumn,
+} from 'typeorm';
 
 @Entity()
 export class UserEntity {
-  @ObjectIdColumn() 
-  id: ObjectID; 
+  @ObjectIdColumn()
+  id: ObjectID;
 
-  @Column({unique:true})
+  @Column({ unique: true })
   username: string;
 
   @Column()
@@ -23,17 +29,15 @@ export class UserEntity {
   @Column()
   rsaPublicSharingKey: string;
 
-  @Column({unique:true})
+  @Column({ unique: true })
   email: string;
 
-
   @BeforeInsert()
-  @Column("string", { array: true })
+  @Column('string', { array: true, default: [] })
   sessionIdentifiers: string[];
 
-
   @BeforeInsert()
-  emailtolowercase(){
-    this.email = this.email.toLocaleLowerCase()
+  emailToLowercase() {
+    this.email = this.email.toLocaleLowerCase();
   }
 }
