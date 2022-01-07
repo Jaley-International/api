@@ -33,7 +33,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "mongodb": "^3.6.0",
-    "node-forge": "^0.10.0",
+    "node-forge": "^1.0.0",
     "passport": "^0.5.0",
     "passport-custom": "^1.1.1",
     "passport-jwt": "^4.0.0",
