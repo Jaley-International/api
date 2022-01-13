@@ -96,11 +96,15 @@ export class UserService {
             return res;
           }
 
-          return key;
+          throw new HttpException(
+            'Invalid credentials',
+            HttpStatus.UNAUTHORIZED,
+          );
         } else {
-          const key = sha512(dto.derivedAuthenticationKey);
-          console.log(key);
-          return key;
+          throw new HttpException(
+            'Invalid credentials',
+            HttpStatus.UNAUTHORIZED,
+          );
         }
       }),
     );
