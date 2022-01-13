@@ -6,6 +6,9 @@ export class GetSaltDto {
 }
 
 export class AuthenticationDto extends GetSaltDto {
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  username: string;
+
   @Matches(/^[0-9a-f]{64}$/)
   derivedAuthenticationKey: string;
 }
