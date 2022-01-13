@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { CustomStrategy } from 'src/auth/strategies/custom.strategy';
-import { LoginUserDto, LoginUserDto2, CreateUserDto } from './user.dto';
+import { GetSaltDto, AuthenticationDto, CreateUserDto } from './user.dto';
 import { UserService } from './user.service';
 import { UserEntity } from './user.entity';
 
@@ -18,22 +18,22 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @Post()
-  create(@Body() createdUserDto: CreateUserDto): Observable<UserEntity> {
-    return this.userService.create(createdUserDto);
+  create(@Body() dto: CreateUserDto): Observable<UserEntity> {
+    return this.userService.create(dto);
   }
 
   @Post('getSalt')
   @HttpCode(200)
-  login(@Body() LoginUserDto: LoginUserDto): Observable<any> {
-    const salt = this.userService.login(LoginUserDto);
+  getSalt(@Body() dto: GetSaltDto): Observable<any> {
+    const salt = this.userService.getSalt(dto);
     console.log(salt);
     return salt;
   }
 
   @Post('login')
   @HttpCode(200)
-  login2(@Body() LoginUserDto2: LoginUserDto2): Observable<any> {
-    const salt = this.userService.login2(LoginUserDto2);
+  authentication(@Body() dto: AuthenticationDto): Observable<any> {
+    const salt = this.userService.authentication(dto);
     console.log(salt);
     return salt;
   }

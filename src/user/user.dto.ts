@@ -1,11 +1,11 @@
 import { IsEmail, IsString, Matches } from 'class-validator';
 
-export class LoginUserDto {
+export class GetSaltDto {
   @Matches(/^[0-9a-zA-Z-]{3,16}$/)
   username: string;
 }
 
-export class LoginUserDto2 extends LoginUserDto {
+export class AuthenticationDto extends GetSaltDto {
   @Matches(/^[0-9a-f]{64}$/)
   derivedAuthenticationKey: string;
 }
@@ -35,12 +35,12 @@ export class CreateUserDto {
   sessionIdentifiers: string[];
 }
 
-export class userSaltDto {
+export class UserSaltDto {
   @IsString()
   salt: string;
 }
 
-export class loginResponseDto {
+export class LoginResponseDto {
   @Matches(/^[0-9a-f]{128}$/)
   encryptedMasterKey: string;
 

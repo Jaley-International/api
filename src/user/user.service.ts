@@ -5,10 +5,10 @@ import { map, switchMap } from 'rxjs/operators';
 import { ObjectID, Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {
-  LoginUserDto,
+  GetSaltDto,
   CreateUserDto,
-  LoginUserDto2,
-  loginResponseDto,
+  AuthenticationDto,
+  LoginResponseDto,
 } from './user.dto';
 import {
   INSTANCE_ID,
@@ -26,14 +26,14 @@ export class UserService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
-  create(createdUserDto: CreateUserDto): Observable<UserEntity> {
-    return this.mailExists(createdUserDto.email).pipe(
+  create(dto: CreateUserDto): Observable<UserEntity> {
+    return this.mailExists(dto.email).pipe(
       switchMap((exists: boolean) => {
         if (!exists) {
-          return this.userExists(createdUserDto.username).pipe(
+          return this.userExists(dto.username).pipe(
             switchMap((exists: boolean) => {
               if (!exists) {
-                return from(this.userRepository.save(createdUserDto));
+                return from(this.userRepository.save(dto));
               } else {
                 throw new HttpException(
                   'username already in use',
@@ -49,13 +49,13 @@ export class UserService {
     );
   }
 
-  login(loginUserDto: LoginUserDto): Observable<string> {
-    return this.findUser(loginUserDto.username).pipe(
+  getSalt(dto: GetSaltDto): Observable<string> {
+    return this.findUser(dto.username).pipe(
       map((user: UserEntity) => {
         if (user !== null) {
           const salt = sha256(
             addPadding(
-              loginUserDto.username + INSTANCE_ID + user.clientRandomValue,
+              dto.username + INSTANCE_ID + user.clientRandomValue,
               128,
             ),
           );
@@ -64,10 +64,7 @@ export class UserService {
           return salt;
         } else {
           const salt = sha256(
-            addPadding(
-              loginUserDto.username + INSTANCE_ID + SERVER_RANDOM_VALUE,
-              128,
-            ),
+            addPadding(dto.username + INSTANCE_ID + SERVER_RANDOM_VALUE, 128),
           );
           console.log(salt);
           return salt;
@@ -76,18 +73,18 @@ export class UserService {
     );
   }
 
-  login2(loginUserDto2: LoginUserDto2): Observable<any> {
-    return this.findUser(loginUserDto2.username).pipe(
+  authentication(dto: AuthenticationDto): Observable<any> {
+    return this.findUser(dto.username).pipe(
       map((user: UserEntity) => {
         if (user !== null) {
-          const key = sha512(loginUserDto2.derivedAuthenticationKey);
+          const key = sha512(dto.derivedAuthenticationKey);
 
           if (key === user.hashedAuthenticationKey) {
             const session = generateSessionIdentifier();
             user.sessionIdentifiers.push(session);
             this.userRepository.save(user);
 
-            const res = new loginResponseDto();
+            const res = new LoginResponseDto();
             res.encryptedMasterKey = user.encryptedMasterKey;
             res.encryptedRsaPrivateSharingKey =
               user.encryptedRsaPrivateSharingKey;
@@ -101,7 +98,7 @@ export class UserService {
 
           return key;
         } else {
-          const key = sha512(loginUserDto2.derivedAuthenticationKey);
+          const key = sha512(dto.derivedAuthenticationKey);
           console.log(key);
           return key;
         }
