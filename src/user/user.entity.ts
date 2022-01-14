@@ -4,7 +4,9 @@ import {
   Entity,
   ObjectID,
   ObjectIdColumn,
+  OneToMany,
 } from 'typeorm';
+import { NodeEntity } from '../filesystem/filesystem.entity';
 
 @Entity()
 export class UserEntity {
@@ -40,4 +42,7 @@ export class UserEntity {
   emailToLowercase() {
     this.email = this.email.toLocaleLowerCase();
   }
+
+  @OneToMany(() => NodeEntity, (workspace) => workspace.workspaceOwner)
+  workspaces: NodeEntity[];
 }

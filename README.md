@@ -1,6 +1,7 @@
-## Current Requests
+## Requests quick doc
 
-See the withepaper for any usage of the requests.
+See the withepaper for any usage of the requests.<br/>
+TypeORM code should obey https://orkhan.gitbook.io/typeorm/docs/mongodb.
 
 ### User
 
@@ -40,4 +41,31 @@ POST /login {
     derivedAuthenticationKey : string
 }
 returns salt
+```
+
+### File System
+
+```
+Prefix : /fileSystem
+```
+
+```
+POST /uploadFile {
+  file: file
+  encryptedFile: string
+  encryptedMetadata: string
+  encryptedKey: string
+  encryptedParentKey: string
+  parentId: string
+  userId: string
+}
+returns updated tree
+```
+
+```
+POST /uploadFolder
+```
+
+```
+POST /uploadRoot
 ```

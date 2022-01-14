@@ -5,7 +5,7 @@ export class GetSaltDto {
   username: string;
 }
 
-export class AuthenticationDto extends GetSaltDto {
+export class AuthenticationDto {
   @Matches(/^[0-9a-zA-Z-]{3,16}$/)
   username: string;
 

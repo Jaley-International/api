@@ -1,15 +1,11 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { CustomStrategy } from 'src/auth/strategies/custom.strategy';
-import { GetSaltDto, AuthenticationDto, CreateUserDto } from './user.dto';
+import {
+  GetSaltDto,
+  AuthenticationDto,
+  CreateUserDto,
+  LoginResponseDto,
+} from './user.dto';
 import { UserService } from './user.service';
 import { UserEntity } from './user.entity';
 
@@ -24,24 +20,18 @@ export class UserController {
 
   @Post('getSalt')
   @HttpCode(200)
-  getSalt(@Body() dto: GetSaltDto): Observable<any> {
-    const salt = this.userService.getSalt(dto);
-    console.log(salt);
-    return salt;
+  getSalt(@Body() dto: GetSaltDto): Observable<string> {
+    return this.userService.getSalt(dto);
   }
 
   @Post('login')
   @HttpCode(200)
-  authentication(@Body() dto: AuthenticationDto): Observable<any> {
-    const salt = this.userService.authentication(dto);
-    console.log(salt);
-    return salt;
+  authentication(@Body() dto: AuthenticationDto): Observable<LoginResponseDto> {
+    return this.userService.authentication(dto);
   }
 
-  @UseGuards(CustomStrategy)
   @Get()
-  findAll(@Req() request): Observable<UserEntity[]> {
-    console.log(request.user);
+  findAll(): Observable<UserEntity[]> {
     return this.userService.findAll();
   }
 }

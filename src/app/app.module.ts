@@ -14,6 +14,7 @@ import { UserEntity } from '../user/user.entity';
       entities: ['dist/src/**/*.entity.js'],
       autoLoadEntities: true,
       synchronize: true,
+      useUnifiedTopology: true,
     }),
   ],
 })
