@@ -34,6 +34,7 @@ export class FilesystemController {
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadFileDto,
   ): Promise<NodeEntity[]> {
+    //TODO upload file only if db upload is ok
     return this.fileService.uploadFile(dto, file.filename);
   }
 

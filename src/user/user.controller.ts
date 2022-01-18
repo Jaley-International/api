@@ -13,8 +13,14 @@ import { UserEntity } from './user.entity';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Post()
+  @Get()
+  findAll(): Promise<UserEntity[]> {
+    return this.userService.findAll();
+  }
+
+  @Post('create')
   create(@Body() dto: CreateUserDto): Observable<UserEntity> {
+    console.log('success');
     return this.userService.create(dto);
   }
 
@@ -28,10 +34,5 @@ export class UserController {
   @HttpCode(200)
   authentication(@Body() dto: AuthenticationDto): Observable<LoginResponseDto> {
     return this.userService.authentication(dto);
-  }
-
-  @Get()
-  findAll(): Observable<UserEntity[]> {
-    return this.userService.findAll();
   }
 }

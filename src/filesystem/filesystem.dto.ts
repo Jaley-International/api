@@ -1,3 +1,5 @@
+//TODO add constrains
+
 export class UploadFileDto {
   encryptedFile: string;
   encryptedMetadata: string;

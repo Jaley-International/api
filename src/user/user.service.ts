@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { from, Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-import { MongoRepository, ObjectID } from 'typeorm';
+import { MongoRepository } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {
   GetSaltDto,
@@ -110,12 +110,15 @@ export class UserService {
     );
   }
 
-  findAll(): Observable<UserEntity[]> {
-    return from(this.userRepository.find());
+  findAll(): Promise<UserEntity[]> {
+    return this.userRepository.find();
   }
 
-  findOne(id: ObjectID): Observable<UserEntity> {
-    return from(this.userRepository.findOne({ id }));
+  //TODO make all other functions return Promise instead of Observable, like here
+  async findOne(id: string): Promise<UserEntity> {
+    return await this.userRepository.findOne({
+      where: { id: { $eq: id } },
+    });
   }
 
   private mailExists(email: string): Observable<boolean> {
