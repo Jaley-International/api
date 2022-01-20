@@ -2,8 +2,7 @@ import {
   Column,
   Entity,
   ManyToOne,
-  ObjectID,
-  ObjectIdColumn,
+  PrimaryGeneratedColumn,
   Tree,
   TreeChildren,
   TreeParent,
@@ -13,8 +12,8 @@ import { UserEntity } from '../user/user.entity';
 @Entity()
 @Tree('materialized-path')
 export class NodeEntity {
-  @ObjectIdColumn()
-  id: ObjectID;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   isFolder: boolean;

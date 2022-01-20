@@ -8,11 +8,11 @@ import { FilesystemModule } from '../filesystem/filesystem.module';
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'mongodb',
-      url: process.env.DB_CONNECTION,
+      type: 'mysql',
+      url: process.env.DB_CON,
       autoLoadEntities: true,
-      synchronize: true,
-      useUnifiedTopology: true,
+      dropSchema: true, // remove for production
+      synchronize: true, // remove for production
     }),
     UserModule,
     FilesystemModule,

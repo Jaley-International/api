@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { from, Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-import { MongoRepository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {
   GetSaltDto,
@@ -23,7 +23,7 @@ import {
 export class UserService {
   constructor(
     @InjectRepository(UserEntity)
-    private userRepository: MongoRepository<UserEntity>,
+    private userRepository: Repository<UserEntity>,
   ) {}
 
   create(dto: CreateUserDto): Observable<UserEntity> {
@@ -117,7 +117,7 @@ export class UserService {
   //TODO make all other functions return Promise instead of Observable, like here
   async findOne(id: number): Promise<UserEntity> {
     return await this.userRepository.findOne({
-      where: { id: { $eq: id } },
+      where: { id: id },
     });
   }
 

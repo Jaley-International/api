@@ -31,6 +31,7 @@ export class FilesystemService {
       );
     }
 
+    // creating new file node
     const newNode = new NodeEntity();
     newNode.isFolder = false;
     newNode.encryptedKey = dto.encryptedKey;
@@ -53,23 +54,20 @@ export class FilesystemService {
       throw new HttpException('file parent not found', HttpStatus.NOT_FOUND);
     }
 
-    // db upload
+    // database upload
     await this.nodeRepository.save(newNode);
 
-    // moving file from temporary disk folder
+    // moving file from temporary disk folder to permanent folder
     rename(currentFilePath, newFilePath, (err) => {
       if (err) throw err;
     });
 
-    //TODO get current workspace tree
-    //TODO already a json ?
-    //TODO unsupported by mongodb
-    return await this.nodeRepository.findRoots();
+    return await this.nodeRepository.findTrees();
   }
 
   async findOne(id: number): Promise<NodeEntity> {
     return await this.nodeRepository.findOne({
-      where: { id: { $eq: id } },
+      where: { id: id },
     });
   }
 }
