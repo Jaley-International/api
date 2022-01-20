@@ -22,7 +22,7 @@ export class NodeEntity {
   @Column()
   encryptedKey: string;
 
-  @Column()
+  @Column({ nullable: true })
   encryptedParentKey: string;
 
   @Column()

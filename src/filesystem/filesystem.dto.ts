@@ -1,18 +1,36 @@
-//TODO add constrains
+import {
+  IsDefined,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class UploadFileDto {
-  encryptedFile: string;
-  encryptedMetadata: string;
-  encryptedKey: string;
-  encryptedParentKey: string;
-  parentId: string;
-  userId: string;
-}
+  @IsDefined()
+  @IsString()
+  @IsNotEmpty()
+  encryptedFileName: string;
 
-export class UploadFolderDto {
+  @IsDefined()
+  @IsString()
   encryptedMetadata: string;
+
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
   encryptedKey: string;
+
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
   encryptedParentKey: string;
-  parentId: string;
-  userId: string;
+
+  @IsDefined()
+  @IsNumber()
+  parentId: number;
+
+  @IsDefined()
+  @IsNumber()
+  userId: number;
 }

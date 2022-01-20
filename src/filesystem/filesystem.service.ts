@@ -4,35 +4,39 @@ import { TreeRepository } from 'typeorm';
 import { UploadFileDto } from './filesystem.dto';
 import { NodeEntity } from './filesystem.entity';
 import { UserService } from '../user/user.service';
+import { existsSync, rename } from 'fs';
 
 @Injectable()
 export class FilesystemService {
+  static readonly tmpFolder = './tmpUploads/';
+  static readonly uploadFolder = './uploads/';
+
   constructor(
     @InjectRepository(NodeEntity)
     private nodeRepository: TreeRepository<NodeEntity>,
     private userService: UserService,
   ) {}
 
-  /**
-   * Uploads a file into the current user workspace architecture in the database.
-   * @param dto
-   * @param fileName
-   */
-  async uploadFile(
-    dto: UploadFileDto,
-    fileName: string,
-  ): Promise<NodeEntity[]> {
+  async uploadFileOnDb(dto: UploadFileDto): Promise<NodeEntity[]> {
     //TODO get the current connected user for security verification
 
-    const newNode = new NodeEntity();
+    const currentFilePath = FilesystemService.tmpFolder + dto.encryptedFileName;
+    const newFilePath = FilesystemService.uploadFolder + dto.encryptedFileName;
 
+    // checking if desired file exist in tmp folder
+    if (!existsSync(currentFilePath)) {
+      throw new HttpException(
+        'expired or non existing file',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const newNode = new NodeEntity();
     newNode.isFolder = false;
     newNode.encryptedKey = dto.encryptedKey;
     newNode.encryptedMetadata = dto.encryptedMetadata;
     newNode.encryptedParentKey = dto.encryptedParentKey;
-
-    //getting file real path
-    newNode.realPath = './upload/' + fileName;
+    newNode.realPath = newFilePath;
 
     // setting workspace owner
     newNode.workspaceOwner = await this.userService.findOne(dto.userId);
@@ -49,15 +53,21 @@ export class FilesystemService {
       throw new HttpException('file parent not found', HttpStatus.NOT_FOUND);
     }
 
+    // db upload
     await this.nodeRepository.save(newNode);
-    console.log('node added');
+
+    // moving file from temporary disk folder
+    rename(currentFilePath, newFilePath, (err) => {
+      if (err) throw err;
+    });
 
     //TODO get current workspace tree
-    //TODO convert to json ?
+    //TODO already a json ?
+    //TODO unsupported by mongodb
     return await this.nodeRepository.findRoots();
   }
 
-  async findOne(id: string): Promise<NodeEntity> {
+  async findOne(id: number): Promise<NodeEntity> {
     return await this.nodeRepository.findOne({
       where: { id: { $eq: id } },
     });

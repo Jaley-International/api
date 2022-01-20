@@ -6,36 +6,40 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import { FilesystemService } from './filesystem.service';
-import { UploadFileDto } from './filesystem.dto';
 import { Express } from 'express';
+import { UploadFileDto } from './filesystem.dto';
 import { NodeEntity } from './filesystem.entity';
+import { diskStorage } from 'multer';
 
 @Controller('fileSystem')
 export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
   /**
-   * Uploads a file to on server disk and update the database.
-   * Returns the user current workspace updated tree.
+   * Uploads the posted file in server disk storage into a temporary folder.
+   * Returns to client the random generated file name.
    * @param file
-   * @param dto
    */
-  @Post('uploadFile')
+  @Post('uploadDisk')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './upload',
-      }),
+      storage: diskStorage({ destination: FilesystemService.tmpFolder }),
     }),
   )
-  uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: UploadFileDto,
-  ): Promise<NodeEntity[]> {
-    //TODO upload file only if db upload is ok
-    return this.fileService.uploadFile(dto, file.filename);
+  uploadFileOnDisk(@UploadedFile() file: Express.Multer.File): string {
+    return file.filename;
+  }
+
+  /**
+   * Uploads a file object into the database architectures.
+   * Moves the previous uploaded file from temporary folder to permanent folder.
+   * Returns to client his updated file system tree architecture.
+   * @param dto
+   */
+  @Post('uploadDb')
+  uploadFileOnDb(@Body() dto: UploadFileDto): Promise<NodeEntity[]> {
+    return this.fileService.uploadFileOnDb(dto);
   }
 
   //TODO uploadFolder(...)

@@ -115,7 +115,7 @@ export class UserService {
   }
 
   //TODO make all other functions return Promise instead of Observable, like here
-  async findOne(id: string): Promise<UserEntity> {
+  async findOne(id: number): Promise<UserEntity> {
     return await this.userRepository.findOne({
       where: { id: { $eq: id } },
     });
