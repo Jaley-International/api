@@ -21,9 +21,33 @@ import { diskStorage } from 'multer';
 export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
+  /**
+   * Returns to client the current file system tree.
+   */
   @Get()
   getFileSystem(): Promise<NodeEntity[]> {
     return this.fileService.getFileSystem();
+  }
+
+  /**
+   * Adds a new root to the file system.
+   * This root is interpreted as a new workspace for the user uploading it.
+   * Returns to client the updated file system tree.
+   * @param dto
+   */
+  @Post('uploadRoot')
+  createRoot(@Body() dto: UploadRootDto): Promise<NodeEntity[]> {
+    return this.fileService.createRoot(dto);
+  }
+
+  /**
+   * Inserts a new folder in a user workspace file system.
+   * Returns to client the updated file system tree.
+   * @param dto
+   */
+  @Post('uploadFolder')
+  createFolder(@Body() dto: UploadFolderDto): Promise<NodeEntity[]> {
+    return this.fileService.createFolder(dto);
   }
 
   /**
@@ -37,28 +61,18 @@ export class FilesystemController {
       storage: diskStorage({ destination: FilesystemService.tmpFolder }),
     }),
   )
-  uploadFileDisk(@UploadedFile() file: Express.Multer.File): string {
+  uploadFile(@UploadedFile() file: Express.Multer.File): string {
     return file.filename;
   }
 
   /**
    * Uploads a file object into the database architectures.
    * Moves the previous uploaded file from temporary folder to permanent folder.
-   * Returns to client his updated file system tree architecture.
+   * Returns the updated file system tree.
    * @param dto
    */
   @Post('uploadFileDb')
-  uploadFileDb(@Body() dto: UploadFileDto): Promise<NodeEntity[]> {
+  createFile(@Body() dto: UploadFileDto): Promise<NodeEntity[]> {
     return this.fileService.createFile(dto);
-  }
-
-  @Post('uploadFolder')
-  uploadFolder(@Body() dto: UploadFolderDto): Promise<NodeEntity[]> {
-    return this.fileService.createFolder(dto);
-  }
-
-  @Post('uploadRoot')
-  uploadRoot(@Body() dto: UploadRootDto): Promise<NodeEntity[]> {
-    return this.fileService.createRoot(dto);
   }
 }

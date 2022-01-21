@@ -9,8 +9,13 @@ import {
 } from 'typeorm';
 import { UserEntity } from '../user/user.entity';
 
+export enum NodeType {
+  FILE = 'file',
+  FOLDER = 'folder',
+}
+
 @Entity()
-@Tree('materialized-path')
+@Tree('closure-table')
 export class NodeEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,11 +26,11 @@ export class NodeEntity {
   @Column()
   encryptedMetadata: string;
 
-  @Column()
-  isFolder: boolean;
+  @Column({ type: 'enum', enum: NodeType })
+  type: NodeType;
 
   @Column({ nullable: true })
-  realPath: string;
+  ref: string;
 
   @Column({ nullable: true })
   encryptedParentKey: string;

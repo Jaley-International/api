@@ -6,7 +6,7 @@ import {
   UploadFolderDto,
   UploadRootDto,
 } from './filesystem.dto';
-import { NodeEntity } from './filesystem.entity';
+import { NodeEntity, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { existsSync, mkdirSync, rename } from 'fs';
 import { UserEntity } from '../user/user.entity';
@@ -43,21 +43,31 @@ export class FilesystemService {
     return workSpaceOwner;
   }
 
-  private async findParent(id: number): Promise<NodeEntity> {
-    const parent = await this.findOne(id);
-    if (parent === undefined) {
-      throw new HttpException('parent not found', HttpStatus.NOT_FOUND);
+  private async findFolder(id: number, key: string): Promise<NodeEntity> {
+    const folder = await this.nodeRepository.findOne({
+      id: id,
+      encryptedKey: key,
+      type: NodeType.FOLDER,
+    });
+    if (folder === undefined) {
+      throw new HttpException('folder not found', HttpStatus.NOT_FOUND);
     }
-    return parent;
+    return folder;
   }
 
+  /**
+   * Adds a new root to the file system.
+   * This root is interpreted as a new workspace for the user uploading it.
+   * Returns the updated file system tree.
+   * @param dto
+   */
   async createRoot(dto: UploadRootDto): Promise<NodeEntity[]> {
     // creating new folder node
     const newRootNode = new NodeEntity();
     newRootNode.encryptedKey = dto.encryptedKey;
     newRootNode.encryptedMetadata = dto.encryptedMetadata;
-    newRootNode.isFolder = true;
-    newRootNode.realPath = null;
+    newRootNode.type = NodeType.FOLDER;
+    newRootNode.ref = null;
     newRootNode.encryptedParentKey = null;
     newRootNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
     newRootNode.parent = null;
@@ -68,16 +78,24 @@ export class FilesystemService {
     return await this.getFileSystem();
   }
 
+  /**
+   * Inserts a new folder in a user workspace file system.
+   * Returns the updated file system tree.
+   * @param dto
+   */
   async createFolder(dto: UploadFolderDto): Promise<NodeEntity[]> {
     // creating new folder node
     const newFolderNode = new NodeEntity();
     newFolderNode.encryptedKey = dto.encryptedKey;
     newFolderNode.encryptedMetadata = dto.encryptedMetadata;
-    newFolderNode.isFolder = true;
-    newFolderNode.realPath = null;
+    newFolderNode.type = NodeType.FOLDER;
+    newFolderNode.ref = null;
     newFolderNode.encryptedParentKey = dto.encryptedParentKey;
     newFolderNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
-    newFolderNode.parent = await this.findParent(dto.parentId);
+    newFolderNode.parent = await this.findFolder(
+      dto.parentId,
+      dto.encryptedParentKey,
+    );
 
     // database upload
     await this.nodeRepository.save(newFolderNode);
@@ -85,6 +103,12 @@ export class FilesystemService {
     return await this.getFileSystem();
   }
 
+  /**
+   * Uploads a file object into the database architectures.
+   * Moves the previous uploaded file from temporary folder to permanent folder.
+   * Returns the updated file system tree.
+   * @param dto
+   */
   async createFile(dto: UploadFileDto): Promise<NodeEntity[]> {
     //TODO get the current connected user for security verification
 
@@ -103,11 +127,14 @@ export class FilesystemService {
     const newFileNode = new NodeEntity();
     newFileNode.encryptedKey = dto.encryptedKey;
     newFileNode.encryptedMetadata = dto.encryptedMetadata;
-    newFileNode.isFolder = false;
-    newFileNode.realPath = newFilePath;
+    newFileNode.type = NodeType.FILE;
+    newFileNode.ref = dto.encryptedFileName;
     newFileNode.encryptedParentKey = dto.encryptedParentKey;
     newFileNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
-    newFileNode.parent = await this.findParent(dto.parentId);
+    newFileNode.parent = await this.findFolder(
+      dto.parentId,
+      dto.encryptedParentKey,
+    );
 
     // database upload
     await this.nodeRepository.save(newFileNode);
