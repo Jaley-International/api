@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -8,7 +9,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
 import { Express } from 'express';
-import { UploadFileDto } from './filesystem.dto';
+import {
+  UploadFileDto,
+  UploadFolderDto,
+  UploadRootDto,
+} from './filesystem.dto';
 import { NodeEntity } from './filesystem.entity';
 import { diskStorage } from 'multer';
 
@@ -16,18 +21,23 @@ import { diskStorage } from 'multer';
 export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
+  @Get()
+  getFileSystem(): Promise<NodeEntity[]> {
+    return this.fileService.getFileSystem();
+  }
+
   /**
    * Uploads the posted file in server disk storage into a temporary folder.
    * Returns to client the random generated file name.
    * @param file
    */
-  @Post('uploadDisk')
+  @Post('uploadFileDisk')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({ destination: FilesystemService.tmpFolder }),
     }),
   )
-  uploadFileOnDisk(@UploadedFile() file: Express.Multer.File): string {
+  uploadFileDisk(@UploadedFile() file: Express.Multer.File): string {
     return file.filename;
   }
 
@@ -37,12 +47,18 @@ export class FilesystemController {
    * Returns to client his updated file system tree architecture.
    * @param dto
    */
-  @Post('uploadDb')
-  uploadFileOnDb(@Body() dto: UploadFileDto): Promise<NodeEntity[]> {
-    return this.fileService.uploadFileOnDb(dto);
+  @Post('uploadFileDb')
+  uploadFileDb(@Body() dto: UploadFileDto): Promise<NodeEntity[]> {
+    return this.fileService.createFile(dto);
   }
 
-  //TODO uploadFolder(...)
+  @Post('uploadFolder')
+  uploadFolder(@Body() dto: UploadFolderDto): Promise<NodeEntity[]> {
+    return this.fileService.createFolder(dto);
+  }
 
-  //TODO uploadRoot(...)
+  @Post('uploadRoot')
+  uploadRoot(@Body() dto: UploadRootDto): Promise<NodeEntity[]> {
+    return this.fileService.createRoot(dto);
+  }
 }

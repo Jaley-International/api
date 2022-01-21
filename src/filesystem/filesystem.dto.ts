@@ -34,3 +34,42 @@ export class UploadFileDto {
   @IsNumber()
   userId: number;
 }
+
+export class UploadFolderDto {
+  @IsDefined()
+  @IsString()
+  encryptedMetadata: string;
+
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
+  encryptedKey: string;
+
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
+  encryptedParentKey: string;
+
+  @IsDefined()
+  @IsNumber()
+  parentId: number;
+
+  @IsDefined()
+  @IsNumber()
+  userId: number;
+}
+
+export class UploadRootDto {
+  @IsDefined()
+  @IsString()
+  encryptedMetadata: string;
+
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
+  encryptedKey: string;
+
+  @IsDefined()
+  @IsNumber()
+  userId: number;
+}

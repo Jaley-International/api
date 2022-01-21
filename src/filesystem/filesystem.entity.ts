@@ -16,26 +16,26 @@ export class NodeEntity {
   id: number;
 
   @Column()
-  isFolder: boolean;
-
-  @Column()
   encryptedKey: string;
-
-  @Column({ nullable: true })
-  encryptedParentKey: string;
 
   @Column()
   encryptedMetadata: string;
 
   @Column()
+  isFolder: boolean;
+
+  @Column({ nullable: true })
   realPath: string;
+
+  @Column({ nullable: true })
+  encryptedParentKey: string;
 
   @ManyToOne(() => UserEntity, (user) => user.workspaces)
   workspaceOwner: UserEntity;
 
-  @TreeChildren()
-  children: NodeEntity[];
-
   @TreeParent()
   parent: NodeEntity;
+
+  @TreeChildren()
+  children: NodeEntity[];
 }

@@ -1,10 +1,15 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TreeRepository } from 'typeorm';
-import { UploadFileDto } from './filesystem.dto';
+import {
+  UploadFileDto,
+  UploadFolderDto,
+  UploadRootDto,
+} from './filesystem.dto';
 import { NodeEntity } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { existsSync, rename } from 'fs';
+import { UserEntity } from '../user/user.entity';
 
 @Injectable()
 export class FilesystemService {
@@ -17,7 +22,70 @@ export class FilesystemService {
     private userService: UserService,
   ) {}
 
-  async uploadFileOnDb(dto: UploadFileDto): Promise<NodeEntity[]> {
+  getFileSystem(): Promise<NodeEntity[]> {
+    return this.nodeRepository.findTrees();
+  }
+
+  async findOne(id: number): Promise<NodeEntity> {
+    return await this.nodeRepository.findOne({
+      where: { id: id },
+    });
+  }
+
+  private async findWorkspaceOwner(id: number): Promise<UserEntity> {
+    const workSpaceOwner = await this.userService.findOne(id);
+    if (workSpaceOwner === undefined) {
+      throw new HttpException(
+        'workspace owner not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return workSpaceOwner;
+  }
+
+  private async findParent(id: number): Promise<NodeEntity> {
+    const parent = await this.findOne(id);
+    if (parent === undefined) {
+      throw new HttpException('parent not found', HttpStatus.NOT_FOUND);
+    }
+    return parent;
+  }
+
+  async createRoot(dto: UploadRootDto): Promise<NodeEntity[]> {
+    // creating new folder node
+    const newRootNode = new NodeEntity();
+    newRootNode.encryptedKey = dto.encryptedKey;
+    newRootNode.encryptedMetadata = dto.encryptedMetadata;
+    newRootNode.isFolder = true;
+    newRootNode.realPath = null;
+    newRootNode.encryptedParentKey = null;
+    newRootNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newRootNode.parent = null;
+
+    // database upload
+    await this.nodeRepository.save(newRootNode);
+
+    return await this.getFileSystem();
+  }
+
+  async createFolder(dto: UploadFolderDto): Promise<NodeEntity[]> {
+    // creating new folder node
+    const newFolderNode = new NodeEntity();
+    newFolderNode.encryptedKey = dto.encryptedKey;
+    newFolderNode.encryptedMetadata = dto.encryptedMetadata;
+    newFolderNode.isFolder = true;
+    newFolderNode.realPath = null;
+    newFolderNode.encryptedParentKey = dto.encryptedParentKey;
+    newFolderNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newFolderNode.parent = await this.findParent(dto.parentId);
+
+    // database upload
+    await this.nodeRepository.save(newFolderNode);
+
+    return await this.getFileSystem();
+  }
+
+  async createFile(dto: UploadFileDto): Promise<NodeEntity[]> {
     //TODO get the current connected user for security verification
 
     const currentFilePath = FilesystemService.tmpFolder + dto.encryptedFileName;
@@ -32,42 +100,23 @@ export class FilesystemService {
     }
 
     // creating new file node
-    const newNode = new NodeEntity();
-    newNode.isFolder = false;
-    newNode.encryptedKey = dto.encryptedKey;
-    newNode.encryptedMetadata = dto.encryptedMetadata;
-    newNode.encryptedParentKey = dto.encryptedParentKey;
-    newNode.realPath = newFilePath;
-
-    // setting workspace owner
-    newNode.workspaceOwner = await this.userService.findOne(dto.userId);
-    if (newNode.workspaceOwner === undefined) {
-      throw new HttpException(
-        'workspace owner not found',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    // setting parent folder
-    newNode.parent = await this.findOne(dto.parentId);
-    if (newNode.parent === undefined) {
-      throw new HttpException('file parent not found', HttpStatus.NOT_FOUND);
-    }
+    const newFileNode = new NodeEntity();
+    newFileNode.encryptedKey = dto.encryptedKey;
+    newFileNode.encryptedMetadata = dto.encryptedMetadata;
+    newFileNode.isFolder = false;
+    newFileNode.realPath = newFilePath;
+    newFileNode.encryptedParentKey = dto.encryptedParentKey;
+    newFileNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newFileNode.parent = await this.findParent(dto.parentId);
 
     // database upload
-    await this.nodeRepository.save(newNode);
+    await this.nodeRepository.save(newFileNode);
 
     // moving file from temporary disk folder to permanent folder
     rename(currentFilePath, newFilePath, (err) => {
       if (err) throw err;
     });
 
-    return await this.nodeRepository.findTrees();
-  }
-
-  async findOne(id: number): Promise<NodeEntity> {
-    return await this.nodeRepository.findOne({
-      where: { id: id },
-    });
+    return await this.getFileSystem();
   }
 }
