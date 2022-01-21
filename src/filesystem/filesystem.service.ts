@@ -8,7 +8,7 @@ import {
 } from './filesystem.dto';
 import { NodeEntity } from './filesystem.entity';
 import { UserService } from '../user/user.service';
-import { existsSync, rename } from 'fs';
+import { existsSync, mkdirSync, rename } from 'fs';
 import { UserEntity } from '../user/user.entity';
 
 @Injectable()
@@ -111,6 +111,12 @@ export class FilesystemService {
 
     // database upload
     await this.nodeRepository.save(newFileNode);
+
+    // checking if upload directory exist, creating it if not
+    // prevents error during file renaming below
+    if (!existsSync(FilesystemService.uploadFolder)) {
+      mkdirSync(FilesystemService.uploadFolder);
+    }
 
     // moving file from temporary disk folder to permanent folder
     rename(currentFilePath, newFilePath, (err) => {
