@@ -1,5 +1,6 @@
 import {
   IsDefined,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -72,4 +73,10 @@ export class UploadRootDto {
   @IsDefined()
   @IsNumber()
   userId: number;
+}
+
+export class UserFileSystemDto {
+  @IsDefined()
+  @IsInt()
+  userId: string;
 }

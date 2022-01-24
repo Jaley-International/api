@@ -22,37 +22,57 @@ export class FilesystemService {
     private userService: UserService,
   ) {}
 
-  getFileSystem(): Promise<NodeEntity[]> {
-    return this.nodeRepository.findTrees();
+  //TODO get the current connected user for security verification
+
+  async findAll(): Promise<NodeEntity[]> {
+    return await this.nodeRepository.findTrees();
   }
 
-  async findOne(id: number): Promise<NodeEntity> {
-    return await this.nodeRepository.findOne({
-      where: { id: id },
-    });
-  }
-
-  private async findWorkspaceOwner(id: number): Promise<UserEntity> {
-    const workSpaceOwner = await this.userService.findOne(id);
-    if (workSpaceOwner === undefined) {
-      throw new HttpException(
-        'workspace owner not found',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-    return workSpaceOwner;
-  }
-
-  private async findFolder(id: number, key: string): Promise<NodeEntity> {
+  private async findFolder(
+    id: number,
+    key: string,
+    owner: UserEntity,
+  ): Promise<NodeEntity> {
     const folder = await this.nodeRepository.findOne({
       id: id,
       encryptedKey: key,
       type: NodeType.FOLDER,
+      workspaceOwner: owner,
     });
     if (folder === undefined) {
       throw new HttpException('folder not found', HttpStatus.NOT_FOUND);
     }
     return folder;
+  }
+
+  /**
+   * Returns the file system tree owned by the user passed in parameter.
+   * @param user
+   */
+  async getFileSystemFromUser(user: UserEntity): Promise<NodeEntity[]> {
+    // getting all user workspaces roots
+    const roots = await this.nodeRepository.find({
+      where: { parent: null, type: NodeType.FOLDER, workspaceOwner: user },
+    });
+    if (roots.length === 0) {
+      throw new HttpException('no roots found', HttpStatus.NOT_FOUND);
+    }
+
+    // getting all different roots trees
+    const trees = [];
+    for (const root of roots) {
+      trees.push(await this.nodeRepository.findDescendantsTree(root));
+    }
+    return trees;
+  }
+
+  /**
+   * Returns the file system tree owned by the user passed in parameter.
+   * @param userId
+   */
+  async getFileSystemFromUserId(userId: number): Promise<NodeEntity[]> {
+    const user = await this.userService.findOne(userId);
+    return await this.getFileSystemFromUser(user);
   }
 
   /**
@@ -69,13 +89,13 @@ export class FilesystemService {
     newRootNode.type = NodeType.FOLDER;
     newRootNode.ref = null;
     newRootNode.encryptedParentKey = null;
-    newRootNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newRootNode.workspaceOwner = await this.userService.findOne(dto.userId);
     newRootNode.parent = null;
 
     // database upload
     await this.nodeRepository.save(newRootNode);
 
-    return await this.getFileSystem();
+    return await this.getFileSystemFromUser(newRootNode.workspaceOwner);
   }
 
   /**
@@ -91,16 +111,17 @@ export class FilesystemService {
     newFolderNode.type = NodeType.FOLDER;
     newFolderNode.ref = null;
     newFolderNode.encryptedParentKey = dto.encryptedParentKey;
-    newFolderNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newFolderNode.workspaceOwner = await this.userService.findOne(dto.userId);
     newFolderNode.parent = await this.findFolder(
       dto.parentId,
       dto.encryptedParentKey,
+      newFolderNode.workspaceOwner,
     );
 
     // database upload
     await this.nodeRepository.save(newFolderNode);
 
-    return await this.getFileSystem();
+    return await this.getFileSystemFromUser(newFolderNode.workspaceOwner);
   }
 
   /**
@@ -110,8 +131,6 @@ export class FilesystemService {
    * @param dto
    */
   async createFile(dto: UploadFileDto): Promise<NodeEntity[]> {
-    //TODO get the current connected user for security verification
-
     const currentFilePath = FilesystemService.tmpFolder + dto.encryptedFileName;
     const newFilePath = FilesystemService.uploadFolder + dto.encryptedFileName;
 
@@ -130,10 +149,11 @@ export class FilesystemService {
     newFileNode.type = NodeType.FILE;
     newFileNode.ref = dto.encryptedFileName;
     newFileNode.encryptedParentKey = dto.encryptedParentKey;
-    newFileNode.workspaceOwner = await this.findWorkspaceOwner(dto.userId);
+    newFileNode.workspaceOwner = await this.userService.findOne(dto.userId);
     newFileNode.parent = await this.findFolder(
       dto.parentId,
       dto.encryptedParentKey,
+      newFileNode.workspaceOwner,
     );
 
     // database upload
@@ -150,6 +170,6 @@ export class FilesystemService {
       if (err) throw err;
     });
 
-    return await this.getFileSystem();
+    return await this.getFileSystemFromUser(newFileNode.workspaceOwner);
   }
 }

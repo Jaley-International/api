@@ -29,6 +29,8 @@ export class UserService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
+  //TODO make all functions return Promise instead of Observable
+
   create(dto: CreateUserDto): Observable<UserEntity> {
     return this.mailExists(dto.email).pipe(
       switchMap((exists: boolean) => {
@@ -141,11 +143,15 @@ export class UserService {
     return this.userRepository.find();
   }
 
-  //TODO make all other functions return Promise instead of Observable, like here
   async findOne(id: number): Promise<UserEntity> {
-    return await this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id: id },
     });
+    if (user === undefined) {
+      console.log(id);
+      throw new HttpException('user not found', HttpStatus.NOT_FOUND);
+    }
+    return user;
   }
 
   private mailExists(email: string): Observable<boolean> {

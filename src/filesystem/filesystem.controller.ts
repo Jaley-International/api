@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -26,7 +27,16 @@ export class FilesystemController {
    */
   @Get()
   getFileSystem(): Promise<NodeEntity[]> {
-    return this.fileService.getFileSystem();
+    return this.fileService.findAll();
+  }
+
+  /**
+   * Returns to client the current file system tree owned by the specified user.
+   * @param params
+   */
+  @Get(':id')
+  getUserFileSystem(@Param() params): Promise<NodeEntity[]> {
+    return this.fileService.getFileSystemFromUserId(params.id);
   }
 
   /**
