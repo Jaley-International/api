@@ -5,9 +5,12 @@ import {
   AuthenticationDto,
   CreateUserDto,
   LoginResponseDto,
+  UpdateUserDto,
+  DeleteUserDto,
 } from './user.dto';
 import { UserService } from './user.service';
 import { UserEntity } from './user.entity';
+import { DeleteResult } from 'typeorm';
 
 @Controller('users')
 export class UserController {
@@ -20,8 +23,27 @@ export class UserController {
 
   @Post('create')
   create(@Body() dto: CreateUserDto): Observable<UserEntity> {
-    console.log('success');
     return this.userService.create(dto);
+  }
+
+  /**
+   * Updates a user account parameters specified in the request.
+   * Returns the updated user to the client.
+   * @param dto
+   */
+  @Post('update')
+  update(@Body() dto: UpdateUserDto): Promise<UserEntity> {
+    return this.userService.update(dto);
+  }
+
+  /**
+   * Delete the user possessing the id specified in the request.
+   * Returns to client the DeleteResult.
+   * @param dto
+   */
+  @Post('delete')
+  delete(@Body() dto: DeleteUserDto): Promise<DeleteResult> {
+    return this.userService.delete(dto);
   }
 
   @Post('getSalt')

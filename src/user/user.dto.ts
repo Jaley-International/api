@@ -2,6 +2,7 @@ import {
   IsArray,
   IsDefined,
   IsEmail,
+  IsInt,
   IsString,
   Matches,
 } from 'class-validator';
@@ -61,6 +62,22 @@ export class CreateUserDto {
 
   @IsArray()
   sessionIdentifiers: string[];
+}
+
+export class UpdateUserDto {
+  @IsDefined()
+  @IsInt()
+  id: number;
+
+  @IsDefined()
+  @IsEmail()
+  email: string;
+}
+
+export class DeleteUserDto {
+  @IsDefined()
+  @IsInt()
+  id: number;
 }
 
 export class UserSaltDto {

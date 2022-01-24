@@ -2,13 +2,15 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { from, Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {
   GetSaltDto,
   CreateUserDto,
   AuthenticationDto,
   LoginResponseDto,
+  DeleteUserDto,
+  UpdateUserDto,
 } from './user.dto';
 import {
   INSTANCE_ID,
@@ -47,6 +49,27 @@ export class UserService {
         }
       }),
     );
+  }
+
+  /**
+   * Updates a user account parameters specified in the request.
+   * Returns the updated user.
+   * @param dto
+   */
+  async update(dto: UpdateUserDto): Promise<UserEntity> {
+    const userToUpdate = await this.userRepository.findOne(dto.id);
+    userToUpdate.email = dto.email;
+    await this.userRepository.save(userToUpdate);
+    return userToUpdate;
+  }
+
+  /**
+   * Delete the user possessing the id specified in the request.
+   * Returns the DeleteResult.
+   * @param dto
+   */
+  delete(dto: DeleteUserDto): Promise<DeleteResult> {
+    return this.userRepository.delete(dto.id);
   }
 
   /**
