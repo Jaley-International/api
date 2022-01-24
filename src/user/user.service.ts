@@ -21,6 +21,7 @@ import {
   generateSessionIdentifier,
   rsaPublicEncrypt,
 } from 'src/logic/security';
+
 @Injectable()
 export class UserService {
   constructor(
@@ -57,7 +58,10 @@ export class UserService {
    * @param dto
    */
   async update(dto: UpdateUserDto): Promise<UserEntity> {
-    const userToUpdate = await this.userRepository.findOne(dto.id);
+    const userToUpdate = await this.findOne(dto.id);
+    if (userToUpdate === undefined) {
+      throw new HttpException('user to update not found', HttpStatus.NOT_FOUND);
+    }
     userToUpdate.email = dto.email;
     await this.userRepository.save(userToUpdate);
     return userToUpdate;
