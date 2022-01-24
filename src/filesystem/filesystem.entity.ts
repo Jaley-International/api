@@ -26,7 +26,7 @@ export class NodeEntity {
   @Column()
   encryptedMetadata: string;
 
-  @Column({ type: 'enum', enum: NodeType })
+  @Column({ type: 'enum', enum: NodeType, update: false })
   type: NodeType;
 
   @Column({ nullable: true })
