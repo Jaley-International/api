@@ -61,9 +61,6 @@ export class UserService {
    */
   async update(dto: UpdateUserDto): Promise<UserEntity> {
     const userToUpdate = await this.findOne(dto.id);
-    if (userToUpdate === undefined) {
-      throw new HttpException('user to update not found', HttpStatus.NOT_FOUND);
-    }
     userToUpdate.email = dto.email;
     await this.userRepository.save(userToUpdate);
     return userToUpdate;
@@ -139,8 +136,8 @@ export class UserService {
     );
   }
 
-  findAll(): Promise<UserEntity[]> {
-    return this.userRepository.find();
+  async findAll(): Promise<UserEntity[]> {
+    return await this.userRepository.find();
   }
 
   async findOne(id: number): Promise<UserEntity> {

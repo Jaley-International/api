@@ -2,9 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TreeRepository } from 'typeorm';
 import {
-  UploadFileDto,
-  UploadFolderDto,
-  UploadRootDto,
+  CreateFileDto,
+  CreateFolderDto,
+  CreateRootDto,
 } from './filesystem.dto';
 import { NodeEntity, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
@@ -28,6 +28,14 @@ export class FilesystemService {
     return await this.nodeRepository.findTrees();
   }
 
+  /**
+   * Returns a folder corresponding to the id and key passed in arguments.
+   * The target folder must also be in the file system tree of the user passed in parameter.
+   * @param id
+   * @param key
+   * @param owner
+   * @private
+   */
   private async findFolder(
     id: number,
     key: string,
@@ -39,9 +47,11 @@ export class FilesystemService {
       type: NodeType.FOLDER,
       workspaceOwner: owner,
     });
+
     if (folder === undefined) {
       throw new HttpException('folder not found', HttpStatus.NOT_FOUND);
     }
+
     return folder;
   }
 
@@ -76,12 +86,11 @@ export class FilesystemService {
   }
 
   /**
-   * Adds a new root to the file system.
-   * This root is interpreted as a new workspace for the user uploading it.
+   * Adds a new root to the file system of the specified user
    * Returns the updated file system tree.
    * @param dto
    */
-  async createRoot(dto: UploadRootDto): Promise<NodeEntity[]> {
+  async createRoot(dto: CreateRootDto): Promise<NodeEntity[]> {
     // creating new folder node
     const newRootNode = new NodeEntity();
     newRootNode.encryptedKey = dto.encryptedKey;
@@ -95,6 +104,7 @@ export class FilesystemService {
     // database upload
     await this.nodeRepository.save(newRootNode);
 
+    // return the trees owned by the user
     return await this.getFileSystemFromUser(newRootNode.workspaceOwner);
   }
 
@@ -103,7 +113,7 @@ export class FilesystemService {
    * Returns the updated file system tree.
    * @param dto
    */
-  async createFolder(dto: UploadFolderDto): Promise<NodeEntity[]> {
+  async createFolder(dto: CreateFolderDto): Promise<NodeEntity[]> {
     // creating new folder node
     const newFolderNode = new NodeEntity();
     newFolderNode.encryptedKey = dto.encryptedKey;
@@ -121,6 +131,7 @@ export class FilesystemService {
     // database upload
     await this.nodeRepository.save(newFolderNode);
 
+    // return the trees owned by the user
     return await this.getFileSystemFromUser(newFolderNode.workspaceOwner);
   }
 
@@ -130,7 +141,7 @@ export class FilesystemService {
    * Returns the updated file system tree.
    * @param dto
    */
-  async createFile(dto: UploadFileDto): Promise<NodeEntity[]> {
+  async createFile(dto: CreateFileDto): Promise<NodeEntity[]> {
     const currentFilePath = FilesystemService.tmpFolder + dto.encryptedFileName;
     const newFilePath = FilesystemService.uploadFolder + dto.encryptedFileName;
 
@@ -159,7 +170,7 @@ export class FilesystemService {
     // database upload
     await this.nodeRepository.save(newFileNode);
 
-    // checking if upload directory exist, creating it if not
+    // checks if upload directory exist, creates it if not
     // prevents error during file renaming below
     if (!existsSync(FilesystemService.uploadFolder)) {
       mkdirSync(FilesystemService.uploadFolder);
@@ -170,6 +181,7 @@ export class FilesystemService {
       if (err) throw err;
     });
 
+    // return the trees owned by the user
     return await this.getFileSystemFromUser(newFileNode.workspaceOwner);
   }
 }
