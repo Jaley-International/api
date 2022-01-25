@@ -148,7 +148,6 @@ export class UserService {
       where: { id: id },
     });
     if (user === undefined) {
-      console.log(id);
       throw new HttpException('user not found', HttpStatus.NOT_FOUND);
     }
     return user;
