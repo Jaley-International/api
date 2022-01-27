@@ -38,7 +38,7 @@ export class FilesystemController {
 
   /**
    * Get the current file system tree of a user by its id.
-   * @param params number
+   * @param params
    */
   @Get(':userId')
   @ApiResponse({ description: "user's file system" })
