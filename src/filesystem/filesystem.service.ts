@@ -81,7 +81,6 @@ export class FilesystemService {
    * @param userId
    */
   async getFileSystemFromUserId(userId: number): Promise<NodeEntity[]> {
-    //TODO user not found when id > 1
     const user = await this.userService.findOne(userId);
     return await this.getFileSystemFromUser(user);
   }

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -28,7 +29,7 @@ export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
   /**
-   * Get the current file system tree.
+   * Get all the current file system trees.
    */
   @Get()
   @ApiResponse({ description: 'global file system' })
@@ -38,13 +39,15 @@ export class FilesystemController {
 
   /**
    * Get the current file system tree of a user by its id.
-   * @param params
+   * @param userId
    */
   @Get(':userId')
   @ApiResponse({ description: "user's file system" })
   @ApiNotFoundResponse()
-  async getUserFileSystem(@Param() params): Promise<NodeEntity[]> {
-    return await this.fileService.getFileSystemFromUserId(params.userId);
+  async getUserFileSystem(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<NodeEntity[]> {
+    return await this.fileService.getFileSystemFromUserId(userId);
   }
 
   /**
