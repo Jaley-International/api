@@ -16,13 +16,14 @@ import {
   CreateFolderDto,
   CreateRootDto,
 } from './filesystem.dto';
-import { NodeEntity } from './filesystem.entity';
+import { Node } from './filesystem.entity';
 import { diskStorage } from 'multer';
 import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Constants } from '../logic/constants';
 
 @Controller('fileSystem')
 export class FilesystemController {
@@ -33,57 +34,53 @@ export class FilesystemController {
    */
   @Get()
   @ApiResponse({ description: 'global file system' })
-  async getFileSystem(): Promise<NodeEntity[]> {
+  async getFileSystem(): Promise<Node[]> {
     return await this.fileService.findAll();
   }
 
   /**
    * Get the current file system tree of a user by its id.
-   * @param userId
    */
   @Get(':userId')
   @ApiResponse({ description: "user's file system" })
   @ApiNotFoundResponse()
   async getUserFileSystem(
     @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<NodeEntity[]> {
+  ): Promise<Node[]> {
     return await this.fileService.getFileSystemFromUserId(userId);
   }
 
   /**
    * Adds a new root to the file system of the specified user.
    * Returns to client the updated file system tree.
-   * @param dto
    */
   @Post('createRoot')
   @ApiCreatedResponse({ description: 'root created' })
   @ApiNotFoundResponse()
-  async createRoot(@Body() dto: CreateRootDto): Promise<NodeEntity[]> {
+  async createRoot(@Body() dto: CreateRootDto): Promise<Node[]> {
     return await this.fileService.createRoot(dto);
   }
 
   /**
    * Inserts a new folder in a user workspace file system.
    * Returns to client the updated file system tree.
-   * @param dto
    */
   @Post('createFolder')
   @ApiCreatedResponse({ description: 'folder created' })
   @ApiNotFoundResponse()
-  async createFolder(@Body() dto: CreateFolderDto): Promise<NodeEntity[]> {
+  async createFolder(@Body() dto: CreateFolderDto): Promise<Node[]> {
     return await this.fileService.createFolder(dto);
   }
 
   /**
    * Uploads the posted file in server disk storage into a temporary folder.
    * Returns to client the random generated file name.
-   * @param file
    */
   @Post('uploadFile')
   @ApiCreatedResponse({ description: 'file uploaded' })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({ destination: FilesystemService.tmpFolder }),
+      storage: diskStorage({ destination: Constants.tmpFolder }),
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): string {
@@ -93,13 +90,12 @@ export class FilesystemController {
   /**
    * Uploads a file object into the database architectures.
    * Moves the previous uploaded file from temporary folder to permanent folder.
-   * Returns the updated file system tree.
-   * @param dto
+   * Returns to client the updated file system tree.
    */
   @Post('createFile')
   @ApiCreatedResponse({ description: 'file created' })
   @ApiNotFoundResponse()
-  async createFile(@Body() dto: CreateFileDto): Promise<NodeEntity[]> {
+  async createFile(@Body() dto: CreateFileDto): Promise<Node[]> {
     return await this.fileService.createFile(dto);
   }
 }

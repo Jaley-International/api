@@ -6,42 +6,36 @@ import {
   CreateFolderDto,
   CreateRootDto,
 } from './filesystem.dto';
-import { NodeEntity, NodeType } from './filesystem.entity';
+import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { existsSync, mkdirSync, rename } from 'fs';
-import { UserEntity } from '../user/user.entity';
+import { User } from '../user/user.entity';
+import { Constants } from '../logic/constants';
 
 @Injectable()
 export class FilesystemService {
-  static readonly tmpFolder = './tmpUploads/';
-  static readonly uploadFolder = './uploads/';
-
   constructor(
-    @InjectRepository(NodeEntity)
-    private nodeRepository: TreeRepository<NodeEntity>,
+    @InjectRepository(Node)
+    private nodeRepo: TreeRepository<Node>,
     private userService: UserService,
   ) {}
 
   //TODO get the current connected user for security verification
 
-  async findAll(): Promise<NodeEntity[]> {
-    return await this.nodeRepository.findTrees();
+  async findAll(): Promise<Node[]> {
+    return await this.nodeRepo.findTrees();
   }
 
   /**
    * Returns a folder corresponding to the id and key passed in arguments.
    * The target folder must also be in the file system tree of the user passed in parameter.
-   * @param id
-   * @param key
-   * @param owner
-   * @private
    */
   private async findFolder(
     id: number,
     key: string,
-    owner: UserEntity,
-  ): Promise<NodeEntity> {
-    const folder = await this.nodeRepository.findOne({
+    owner: User,
+  ): Promise<Node> {
+    const folder = await this.nodeRepo.findOne({
       id: id,
       encryptedKey: key,
       type: NodeType.FOLDER,
@@ -57,11 +51,10 @@ export class FilesystemService {
 
   /**
    * Returns the file system tree owned by the user passed in parameter.
-   * @param user
    */
-  async getFileSystemFromUser(user: UserEntity): Promise<NodeEntity[]> {
+  async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
-    const roots = await this.nodeRepository.find({
+    const roots = await this.nodeRepo.find({
       where: { parent: null, type: NodeType.FOLDER, workspaceOwner: user },
     });
     if (roots.length === 0) {
@@ -71,16 +64,15 @@ export class FilesystemService {
     // generating all the trees from user's roots
     const trees = [];
     for (const root of roots) {
-      trees.push(await this.nodeRepository.findDescendantsTree(root));
+      trees.push(await this.nodeRepo.findDescendantsTree(root));
     }
     return trees;
   }
 
   /**
    * Returns the file system tree owned by the user passed in parameter.
-   * @param userId
    */
-  async getFileSystemFromUserId(userId: number): Promise<NodeEntity[]> {
+  async getFileSystemFromUserId(userId: number): Promise<Node[]> {
     const user = await this.userService.findOne(userId);
     return await this.getFileSystemFromUser(user);
   }
@@ -88,11 +80,10 @@ export class FilesystemService {
   /**
    * Adds a new root to the file system of the specified user
    * Returns the updated file system tree.
-   * @param dto
    */
-  async createRoot(dto: CreateRootDto): Promise<NodeEntity[]> {
+  async createRoot(dto: CreateRootDto): Promise<Node[]> {
     // creating new folder node
-    const newRootNode = new NodeEntity();
+    const newRootNode = new Node();
     newRootNode.encryptedKey = dto.encryptedKey;
     newRootNode.encryptedMetadata = dto.encryptedMetadata;
     newRootNode.type = NodeType.FOLDER;
@@ -102,7 +93,7 @@ export class FilesystemService {
     newRootNode.parent = null;
 
     // database upload
-    await this.nodeRepository.save(newRootNode);
+    await this.nodeRepo.save(newRootNode);
 
     // return the trees owned by the user
     return await this.getFileSystemFromUser(newRootNode.workspaceOwner);
@@ -111,11 +102,10 @@ export class FilesystemService {
   /**
    * Inserts a new folder in a user workspace file system.
    * Returns the updated file system tree.
-   * @param dto
    */
-  async createFolder(dto: CreateFolderDto): Promise<NodeEntity[]> {
+  async createFolder(dto: CreateFolderDto): Promise<Node[]> {
     // creating new folder node
-    const newFolderNode = new NodeEntity();
+    const newFolderNode = new Node();
     newFolderNode.encryptedKey = dto.encryptedKey;
     newFolderNode.encryptedMetadata = dto.encryptedMetadata;
     newFolderNode.type = NodeType.FOLDER;
@@ -129,7 +119,7 @@ export class FilesystemService {
     );
 
     // database upload
-    await this.nodeRepository.save(newFolderNode);
+    await this.nodeRepo.save(newFolderNode);
 
     // return the trees owned by the user
     return await this.getFileSystemFromUser(newFolderNode.workspaceOwner);
@@ -139,11 +129,10 @@ export class FilesystemService {
    * Uploads a file object into the database architectures.
    * Moves the previous uploaded file from temporary folder to permanent folder.
    * Returns the updated file system tree.
-   * @param dto
    */
-  async createFile(dto: CreateFileDto): Promise<NodeEntity[]> {
-    const currentFilePath = FilesystemService.tmpFolder + dto.encryptedFileName;
-    const newFilePath = FilesystemService.uploadFolder + dto.encryptedFileName;
+  async createFile(dto: CreateFileDto): Promise<Node[]> {
+    const currentFilePath = Constants.tmpFolder + dto.encryptedFileName;
+    const newFilePath = Constants.uploadFolder + dto.encryptedFileName;
 
     // checking if desired file exist in tmp folder
     if (!existsSync(currentFilePath)) {
@@ -154,7 +143,7 @@ export class FilesystemService {
     }
 
     // creating new file node
-    const newFileNode = new NodeEntity();
+    const newFileNode = new Node();
     newFileNode.encryptedKey = dto.encryptedKey;
     newFileNode.encryptedMetadata = dto.encryptedMetadata;
     newFileNode.type = NodeType.FILE;
@@ -168,12 +157,12 @@ export class FilesystemService {
     );
 
     // database upload
-    await this.nodeRepository.save(newFileNode);
+    await this.nodeRepo.save(newFileNode);
 
     // checks if upload directory exist, creates it if not
     // prevents error during file renaming below
-    if (!existsSync(FilesystemService.uploadFolder)) {
-      mkdirSync(FilesystemService.uploadFolder);
+    if (!existsSync(Constants.uploadFolder)) {
+      mkdirSync(Constants.uploadFolder);
     }
 
     // moving file from temporary disk folder to permanent folder

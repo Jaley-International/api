@@ -80,7 +80,7 @@ export class UpdateUserDto {
   @ApiProperty()
   @IsDefined()
   @IsInt()
-  id: number;
+  userId: number;
 
   @ApiProperty()
   @IsDefined()
@@ -92,7 +92,7 @@ export class DeleteUserDto {
   @ApiProperty()
   @IsDefined()
   @IsInt()
-  id: number;
+  userId: number;
 }
 
 export class LoginResponseDto {

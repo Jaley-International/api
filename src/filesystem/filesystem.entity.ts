@@ -7,7 +7,9 @@ import {
   TreeChildren,
   TreeParent,
 } from 'typeorm';
-import { UserEntity } from '../user/user.entity';
+import { User } from '../user/user.entity';
+import { unlinkSync } from 'fs';
+import { Constants } from '../logic/constants';
 
 export enum NodeType {
   FILE = 'file',
@@ -16,7 +18,7 @@ export enum NodeType {
 
 @Entity()
 @Tree('materialized-path')
-export class NodeEntity {
+export class Node {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -35,14 +37,22 @@ export class NodeEntity {
   @Column({ nullable: true })
   encryptedParentKey: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.workspaces, {
-    onDelete: 'CASCADE',
-  })
-  workspaceOwner: UserEntity;
+  @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
+  workspaceOwner: User;
 
   @TreeParent({ onDelete: 'CASCADE' })
-  parent: NodeEntity;
+  parent: Node;
 
   @TreeChildren()
-  children: NodeEntity[];
+  children: Node[];
+
+  /**
+   * Removes the node's corresponding file on disk
+   * if the node represents a file.
+   */
+  deleteStoredFile() {
+    if (this.type === NodeType.FILE) {
+      unlinkSync(Constants.uploadFolder + this.ref);
+    }
+  }
 }

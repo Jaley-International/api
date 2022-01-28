@@ -5,10 +5,10 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { NodeEntity } from '../filesystem/filesystem.entity';
+import { Node } from '../filesystem/filesystem.entity';
 
 @Entity()
-export class UserEntity {
+export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -41,6 +41,6 @@ export class UserEntity {
     this.email = this.email.toLocaleLowerCase();
   }
 
-  @OneToMany(() => NodeEntity, (workspace) => workspace.workspaceOwner)
-  workspaces: NodeEntity[];
+  @OneToMany(() => Node, (node) => node.workspaceOwner)
+  nodes: Node[];
 }
