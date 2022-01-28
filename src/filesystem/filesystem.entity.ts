@@ -15,7 +15,7 @@ export enum NodeType {
 }
 
 @Entity()
-@Tree('closure-table')
+@Tree('materialized-path')
 export class NodeEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -35,10 +35,12 @@ export class NodeEntity {
   @Column({ nullable: true })
   encryptedParentKey: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.workspaces)
+  @ManyToOne(() => UserEntity, (user) => user.workspaces, {
+    onDelete: 'CASCADE',
+  })
   workspaceOwner: UserEntity;
 
-  @TreeParent()
+  @TreeParent({ onDelete: 'CASCADE' })
   parent: NodeEntity;
 
   @TreeChildren()

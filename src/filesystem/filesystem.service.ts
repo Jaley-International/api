@@ -60,7 +60,7 @@ export class FilesystemService {
    * @param user
    */
   async getFileSystemFromUser(user: UserEntity): Promise<NodeEntity[]> {
-    // getting all user workspaces roots
+    // getting all user's roots
     const roots = await this.nodeRepository.find({
       where: { parent: null, type: NodeType.FOLDER, workspaceOwner: user },
     });
@@ -68,7 +68,7 @@ export class FilesystemService {
       throw new HttpException('no roots found', HttpStatus.NOT_FOUND);
     }
 
-    // getting all different roots trees
+    // generating all the trees from user's roots
     const trees = [];
     for (const root of roots) {
       trees.push(await this.nodeRepository.findDescendantsTree(root));
