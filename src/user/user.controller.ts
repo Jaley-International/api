@@ -41,7 +41,7 @@ export class UserController {
   @ApiConflictResponse({
     description: 'user with same username/email already exists',
   })
-  create(@Body() dto: CreateUserDto): Observable<UserEntity> {
+  create(@Body() dto: CreateUserDto): Promise<UserEntity> {
     return this.userService.create(dto);
   }
 
