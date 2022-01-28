@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import {
   GetSaltDto,
   AuthenticationDto,
@@ -72,14 +71,14 @@ export class UserController {
   @Post('getSalt')
   @ApiResponse({ description: 'getting salt' })
   @ApiNotFoundResponse()
-  getSalt(@Body() dto: GetSaltDto): Observable<string> {
+  getSalt(@Body() dto: GetSaltDto): Promise<string> {
     return this.userService.getSalt(dto);
   }
 
   @Post('login')
   @ApiResponse({ description: 'user login' })
   @ApiNotFoundResponse()
-  authentication(@Body() dto: AuthenticationDto): Observable<LoginResponseDto> {
+  authentication(@Body() dto: AuthenticationDto): Promise<LoginResponseDto> {
     return this.userService.authentication(dto);
   }
 }

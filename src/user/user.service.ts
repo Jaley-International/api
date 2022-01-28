@@ -1,7 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { from, Observable } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
 import { DeleteResult, Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {
@@ -32,21 +30,15 @@ export class UserService {
   //TODO make all functions return Promise instead of Observable
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
-  if(!await this.mailExists(dto.email)){
-    if(!await this.userExists(dto.username))
-    {
-      return await this.userRepository.save(dto)
+    if (!(await this.mailExists(dto.email))) {
+      if (!(await this.userExists(dto.username))) {
+        return await this.userRepository.save(dto);
+      } else {
+        throw new HttpException('username already in use', HttpStatus.CONFLICT);
+      }
+    } else {
+      throw new HttpException('Email  already in use', HttpStatus.CONFLICT);
     }
-    else{
-      throw new HttpException(
-        'username already in use',
-        HttpStatus.CONFLICT,
-      );
-    }
-  }
-  else{
-    throw new HttpException('Email  already in use', HttpStatus.CONFLICT);
-  }
   }
 
   /**
@@ -76,46 +68,42 @@ export class UserService {
    * @param dto
    */
   async getSalt(dto: GetSaltDto): Promise<string> {
-    const user = await this.findUser(dto.username)
-    if (user !== null) {
-      return sha256(addPadding(dto.username + INSTANCE_ID + user.clientRandomValue,128))
-    }
-    else{
-      return sha256(addPadding(dto.username + INSTANCE_ID + SERVER_RANDOM_VALUE, 128))
+    const user = await this.userRepository.findOne({ username: dto.username });
+    if (user !== undefined) {
+      return sha256(
+        addPadding(dto.username + INSTANCE_ID + user.clientRandomValue, 128),
+      );
+    } else {
+      return sha256(
+        addPadding(dto.username + INSTANCE_ID + SERVER_RANDOM_VALUE, 128),
+      );
     }
   }
 
   async authentication(dto: AuthenticationDto): Promise<LoginResponseDto> {
-  const user = await this.findUser(dto.username)
-  if (user !== null) {
-    const key = sha512(dto.derivedAuthenticationKey);
+    const user = await this.userRepository.findOne({ username: dto.username });
+    if (user !== undefined) {
+      const key = sha512(dto.derivedAuthenticationKey);
 
-    if (key === user.hashedAuthenticationKey) {
-      const session = generateSessionIdentifier();
-      user.sessionIdentifiers.push(session);
-      this.userRepository.save(user);
+      if (key === user.hashedAuthenticationKey) {
+        const session = generateSessionIdentifier();
+        user.sessionIdentifiers.push(session);
+        await this.userRepository.save(user);
 
-      const res = new LoginResponseDto();
-      res.encryptedMasterKey = user.encryptedMasterKey;
-      res.encryptedRsaPrivateSharingKey =
-        user.encryptedRsaPrivateSharingKey;
-      res.rsaPublicSharingKey = user.rsaPublicSharingKey;
-      res.encryptedSessionIdentifier = rsaPublicEncrypt(
-        user.rsaPublicSharingKey,
-        session,
-      );
-      return res;
-    }else throw new HttpException(
-    'Invalid credentials',
-    HttpStatus.UNAUTHORIZED,
-  );
-  }else throw new HttpException(
-    'Invalid credentials',
-    HttpStatus.UNAUTHORIZED,
-  );
-  
-
-}
+        const res = new LoginResponseDto();
+        res.encryptedMasterKey = user.encryptedMasterKey;
+        res.encryptedRsaPrivateSharingKey = user.encryptedRsaPrivateSharingKey;
+        res.rsaPublicSharingKey = user.rsaPublicSharingKey;
+        res.encryptedSessionIdentifier = rsaPublicEncrypt(
+          user.rsaPublicSharingKey,
+          session,
+        );
+        return res;
+      } else
+        throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+    } else
+      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+  }
 
   async findAll(): Promise<UserEntity[]> {
     return await this.userRepository.find();
@@ -132,36 +120,10 @@ export class UserService {
   }
 
   private async mailExists(email: string): Promise<boolean> {
-    if(await this.userRepository.findOne({ email }))
-    {
-      return true
-    }
-    else{
-      return false
-    }
+    return !!(await this.userRepository.findOne({ email }));
   }
 
-  private async userExists(username: string): Promise <boolean> {
-    if(await this.userRepository.findOne({ username }))
-    {
-      return true
-    }
-    else{
-      return false
-    }
+  private async userExists(username: string): Promise<boolean> {
+    return !!(await this.userRepository.findOne({ username }));
   }
-
-   async findUser(username: string): Promise<UserEntity> | null {
-const user = await this.userRepository.findOne(username)
-if(user != null )
-{
-  return user
 }
-else{
-  return null;
-}
-   }
-
-
-
-  }
