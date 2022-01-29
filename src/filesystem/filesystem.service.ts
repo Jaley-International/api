@@ -22,24 +22,22 @@ export class FilesystemService {
 
   //TODO get the current connected user for security verification
 
+  /**
+   * Returns all the file system trees of all users.
+   */
   async findAll(): Promise<Node[]> {
     return await this.nodeRepo.findTrees();
   }
 
   /**
-   * Returns a folder corresponding to the id and key passed in arguments.
-   * The target folder must also be in the file system tree of the user passed in parameter.
+   * Returns the node possessing the id passed in parameter,
+   * which should be a folder and in a tree owned by the user.
    */
-  private async findFolder(
-    id: number,
-    key: string,
-    owner: User,
-  ): Promise<Node> {
+  private async findFolder(id: number, owner: User): Promise<Node> {
     const folder = await this.nodeRepo.findOne({
       id: id,
-      encryptedKey: key,
       type: NodeType.FOLDER,
-      workspaceOwner: owner,
+      treeOwner: owner,
     });
 
     if (folder === undefined) {
@@ -55,7 +53,7 @@ export class FilesystemService {
   async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
     const roots = await this.nodeRepo.find({
-      where: { parent: null, type: NodeType.FOLDER, workspaceOwner: user },
+      where: { parent: null, type: NodeType.FOLDER, treeOwner: user },
     });
     if (roots.length === 0) {
       throw new HttpException('no roots found', HttpStatus.NOT_FOUND);
@@ -89,14 +87,14 @@ export class FilesystemService {
     newRootNode.type = NodeType.FOLDER;
     newRootNode.ref = null;
     newRootNode.encryptedParentKey = null;
-    newRootNode.workspaceOwner = await this.userService.findOne(dto.userId);
+    newRootNode.treeOwner = await this.userService.findOne(dto.userId);
     newRootNode.parent = null;
 
     // database upload
     await this.nodeRepo.save(newRootNode);
 
     // return the trees owned by the user
-    return await this.getFileSystemFromUser(newRootNode.workspaceOwner);
+    return await this.getFileSystemFromUser(newRootNode.treeOwner);
   }
 
   /**
@@ -111,18 +109,17 @@ export class FilesystemService {
     newFolderNode.type = NodeType.FOLDER;
     newFolderNode.ref = null;
     newFolderNode.encryptedParentKey = dto.encryptedParentKey;
-    newFolderNode.workspaceOwner = await this.userService.findOne(dto.userId);
+    newFolderNode.treeOwner = await this.userService.findOne(dto.userId);
     newFolderNode.parent = await this.findFolder(
       dto.parentId,
-      dto.encryptedParentKey,
-      newFolderNode.workspaceOwner,
+      newFolderNode.treeOwner,
     );
 
     // database upload
     await this.nodeRepo.save(newFolderNode);
 
     // return the trees owned by the user
-    return await this.getFileSystemFromUser(newFolderNode.workspaceOwner);
+    return await this.getFileSystemFromUser(newFolderNode.treeOwner);
   }
 
   /**
@@ -149,11 +146,10 @@ export class FilesystemService {
     newFileNode.type = NodeType.FILE;
     newFileNode.ref = dto.encryptedFileName;
     newFileNode.encryptedParentKey = dto.encryptedParentKey;
-    newFileNode.workspaceOwner = await this.userService.findOne(dto.userId);
+    newFileNode.treeOwner = await this.userService.findOne(dto.userId);
     newFileNode.parent = await this.findFolder(
       dto.parentId,
-      dto.encryptedParentKey,
-      newFileNode.workspaceOwner,
+      newFileNode.treeOwner,
     );
 
     // database upload
@@ -171,6 +167,6 @@ export class FilesystemService {
     });
 
     // return the trees owned by the user
-    return await this.getFileSystemFromUser(newFileNode.workspaceOwner);
+    return await this.getFileSystemFromUser(newFileNode.treeOwner);
   }
 }

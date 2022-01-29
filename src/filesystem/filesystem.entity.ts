@@ -8,7 +8,7 @@ import {
   TreeParent,
 } from 'typeorm';
 import { User } from '../user/user.entity';
-import { unlinkSync } from 'fs';
+import { existsSync, unlinkSync } from 'fs';
 import { Constants } from '../logic/constants';
 
 export enum NodeType {
@@ -38,7 +38,7 @@ export class Node {
   encryptedParentKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
-  workspaceOwner: User;
+  treeOwner: User;
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;
@@ -52,7 +52,10 @@ export class Node {
    */
   deleteStoredFile() {
     if (this.type === NodeType.FILE) {
-      unlinkSync(Constants.uploadFolder + this.ref);
+      const filePath = Constants.uploadFolder + this.ref;
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
     }
   }
 }

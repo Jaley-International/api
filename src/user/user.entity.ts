@@ -41,6 +41,6 @@ export class User {
     this.email = this.email.toLocaleLowerCase();
   }
 
-  @OneToMany(() => Node, (node) => node.workspaceOwner)
+  @OneToMany(() => Node, (node) => node.treeOwner)
   nodes: Node[];
 }

@@ -68,12 +68,13 @@ export class UserService {
       relations: ['nodes'],
     });
 
-    // removes the files stored on server disk for the nodes representing a file
+    // removes the files stored on server disk
+    // for the nodes representing a file
     for (const node of user.nodes) {
       node.deleteStoredFile();
     }
 
-    // removes target user and all its nodes
+    // removes from database the target user and all its nodes
     // because their onDelete option is set to CASCADE
     return await this.userRepo.remove(user);
   }
