@@ -18,7 +18,7 @@ import {
   addPadding,
   generateSessionIdentifier,
   rsaPublicEncrypt,
-} from 'src/logic/security';
+} from 'src/security';
 
 @Injectable()
 export class UserService {

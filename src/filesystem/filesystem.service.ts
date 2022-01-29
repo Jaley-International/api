@@ -10,7 +10,7 @@ import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { existsSync, mkdirSync, rename } from 'fs';
 import { User } from '../user/user.entity';
-import { Constants } from '../logic/constants';
+import { Constants } from '../constants';
 
 @Injectable()
 export class FilesystemService {

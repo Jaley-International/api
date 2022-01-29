@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { existsSync, unlinkSync } from 'fs';
-import { Constants } from '../logic/constants';
+import { Constants } from '../constants';
 
 export enum NodeType {
   FILE = 'file',

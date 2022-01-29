@@ -23,7 +23,7 @@ import {
   ApiNotFoundResponse,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Constants } from '../logic/constants';
+import { Constants } from '../constants';
 
 @Controller('fileSystem')
 export class FilesystemController {
