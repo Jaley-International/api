@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -84,7 +86,10 @@ export class FilesystemController {
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): string {
-    return file.filename;
+    if (file !== undefined) {
+      return file.filename;
+    }
+    throw new HttpException('invalid file', HttpStatus.BAD_REQUEST);
   }
 
   /**
