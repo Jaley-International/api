@@ -95,4 +95,9 @@ export class DeleteNodeDto {
   @IsDefined()
   @IsInt()
   nodeId: number;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsNumber()
+  userId: number;
 }

@@ -32,34 +32,35 @@ export class FilesystemService {
   }
 
   /**
-   * Returns the targeted node by id.
-   * Throws an exception if not found.
+   * Returns the node corresponding to the id, type, and owner passed in
+   * parameters.
+   * Returns a node no matter its type if type is set to null.
+   * Throws an exception if no appropriate node is found.
    */
-  async findOne(id: number): Promise<Node> {
-    const node = await this.nodeRepo.findOne(id);
+  private async findOne(
+    id: number,
+    owner: User,
+    type: NodeType,
+  ): Promise<Node> {
+    let node: Node;
+
+    if (type === null) {
+      node = await this.nodeRepo.findOne({
+        id: id,
+        treeOwner: owner,
+      });
+    } else {
+      node = await this.nodeRepo.findOne({
+        id: id,
+        type: type,
+        treeOwner: owner,
+      });
+    }
+
     if (node === undefined) {
       throw new HttpException('node not found', HttpStatus.NOT_FOUND);
     }
     return node;
-  }
-
-  /**
-   * Returns the node possessing the id passed in parameter,
-   * which should be a folder and in a tree owned by the user.
-   * Throws an exception if no appropriate folder is found.
-   */
-  private async findFolder(id: number, owner: User): Promise<Node> {
-    const folder = await this.nodeRepo.findOne({
-      id: id,
-      type: NodeType.FOLDER,
-      treeOwner: owner,
-    });
-
-    if (folder === undefined) {
-      throw new HttpException('folder not found', HttpStatus.NOT_FOUND);
-    }
-
-    return folder;
   }
 
   /**
@@ -126,9 +127,10 @@ export class FilesystemService {
     newFolderNode.ref = null;
     newFolderNode.encryptedParentKey = dto.encryptedParentKey;
     newFolderNode.treeOwner = await this.userService.findOne(dto.userId);
-    newFolderNode.parent = await this.findFolder(
+    newFolderNode.parent = await this.findOne(
       dto.parentId,
       newFolderNode.treeOwner,
+      NodeType.FOLDER,
     );
 
     // database upload
@@ -163,9 +165,10 @@ export class FilesystemService {
     newFileNode.ref = dto.encryptedFileName;
     newFileNode.encryptedParentKey = dto.encryptedParentKey;
     newFileNode.treeOwner = await this.userService.findOne(dto.userId);
-    newFileNode.parent = await this.findFolder(
+    newFileNode.parent = await this.findOne(
       dto.parentId,
       newFileNode.treeOwner,
+      NodeType.FOLDER,
     );
 
     // database upload
@@ -191,7 +194,8 @@ export class FilesystemService {
    * Returns the deleted target node.
    */
   async delete(dto: DeleteNodeDto): Promise<Node> {
-    const node = await this.findOne(dto.nodeId);
+    const owner = await this.userService.findOne(dto.userId);
+    const node = await this.findOne(dto.nodeId, owner, null);
     const descendants = await this.nodeRepo.findDescendants(node);
 
     // removes the files stored on server disk

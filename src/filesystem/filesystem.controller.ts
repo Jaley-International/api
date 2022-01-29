@@ -87,10 +87,10 @@ export class FilesystemController {
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): string {
-    if (file !== undefined) {
-      return file.filename;
+    if (file === undefined) {
+      throw new HttpException('invalid file', HttpStatus.BAD_REQUEST);
     }
-    throw new HttpException('invalid file', HttpStatus.BAD_REQUEST);
+    return file.filename;
   }
 
   /**
