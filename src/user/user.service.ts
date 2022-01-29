@@ -31,7 +31,7 @@ export class UserService {
 
   /**
    * Creates a new user and returns it.
-   * Throw an exception if the email or username is already used.
+   * Throws an exception if the email or username is already used.
    */
   async create(dto: CreateUserDto): Promise<User> {
     if (!(await this.mailExists(dto.email))) {
@@ -75,7 +75,7 @@ export class UserService {
     }
 
     // removes from database the target user and all its nodes
-    // because their onDelete option is set to CASCADE
+    // because their onDelete option should be set to CASCADE
     return await this.userRepo.remove(user);
   }
 

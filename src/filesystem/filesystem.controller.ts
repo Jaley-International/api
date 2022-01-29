@@ -17,6 +17,7 @@ import {
   CreateFileDto,
   CreateFolderDto,
   CreateRootDto,
+  DeleteNodeDto,
 } from './filesystem.dto';
 import { Node } from './filesystem.entity';
 import { diskStorage } from 'multer';
@@ -102,5 +103,16 @@ export class FilesystemController {
   @ApiNotFoundResponse()
   async createFile(@Body() dto: CreateFileDto): Promise<Node[]> {
     return await this.fileService.createFile(dto);
+  }
+
+  /**
+   * Deletes a node by id and all of its descendant.
+   * Returns to client the deleted target node.
+   */
+  @Post('delete')
+  @ApiResponse({ description: 'node deleted' })
+  @ApiNotFoundResponse()
+  async delete(@Body() dto: DeleteNodeDto): Promise<Node> {
+    return await this.fileService.delete(dto);
   }
 }

@@ -1,5 +1,6 @@
 import {
   IsDefined,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -87,4 +88,11 @@ export class CreateRootDto {
   @IsDefined()
   @IsNumber()
   userId: number;
+}
+
+export class DeleteNodeDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsInt()
+  nodeId: number;
 }

@@ -5,6 +5,7 @@ import {
   CreateFileDto,
   CreateFolderDto,
   CreateRootDto,
+  DeleteNodeDto,
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
@@ -24,14 +25,28 @@ export class FilesystemService {
 
   /**
    * Returns all the file system trees of all users.
+   * May be deleted for production.
    */
   async findAll(): Promise<Node[]> {
     return await this.nodeRepo.findTrees();
   }
 
   /**
+   * Returns the targeted node by id.
+   * Throws an exception if not found.
+   */
+  async findOne(id: number): Promise<Node> {
+    const node = await this.nodeRepo.findOne(id);
+    if (node === undefined) {
+      throw new HttpException('node not found', HttpStatus.NOT_FOUND);
+    }
+    return node;
+  }
+
+  /**
    * Returns the node possessing the id passed in parameter,
    * which should be a folder and in a tree owned by the user.
+   * Throws an exception if no appropriate folder is found.
    */
   private async findFolder(id: number, owner: User): Promise<Node> {
     const folder = await this.nodeRepo.findOne({
@@ -49,6 +64,7 @@ export class FilesystemService {
 
   /**
    * Returns the file system tree owned by the user passed in parameter.
+   * Throws an exception if no roots are found.
    */
   async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
@@ -168,5 +184,24 @@ export class FilesystemService {
 
     // return the trees owned by the user
     return await this.getFileSystemFromUser(newFileNode.treeOwner);
+  }
+
+  /**
+   * Deletes a node by id and all of its descendant.
+   * Returns the deleted target node.
+   */
+  async delete(dto: DeleteNodeDto): Promise<Node> {
+    const node = await this.findOne(dto.nodeId);
+    const descendants = await this.nodeRepo.findDescendants(node);
+
+    // removes the files stored on server disk
+    // for the nodes representing a file
+    for (const descendant of descendants) {
+      descendant.deleteStoredFile();
+    }
+
+    // removes the target node form database with all its descendants
+    // because their onDelete option should be set to CASCADE
+    return await this.nodeRepo.remove(node);
   }
 }
