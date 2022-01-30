@@ -233,9 +233,10 @@ export class FilesystemService {
    * Deletes a node by id and all of its descendant.
    * Returns the deleted target node.
    */
-  async delete(dto: GetNodeDto): Promise<Node> {
+  async delete(dto: GetNodeDto): Promise<Node[]> {
     const node = await this.findOne(dto.nodeId, dto.treeOwnerId, null);
     const descendants = await this.nodeRepo.findDescendants(node);
+    const treeOwner = await this.userService.findOne(dto.treeOwnerId);
 
     // removes the files stored on server disk
     // for the nodes representing a file
@@ -245,6 +246,7 @@ export class FilesystemService {
 
     // removes the target node form database with all its descendants
     // because their onDelete option should be set to CASCADE
-    return await this.nodeRepo.remove(node);
+    await this.nodeRepo.remove(node);
+    return await this.getFileSystemFromUser(treeOwner);
   }
 }

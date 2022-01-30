@@ -146,12 +146,12 @@ export class FilesystemController {
 
   /**
    * Deletes a node by id and all of its descendant.
-   * Returns to client its deleted target node.
+   * Returns to client its updated file system tree.
    */
   @Post('delete')
   @ApiResponse({ description: 'node deleted' })
   @ApiNotFoundResponse()
-  async delete(@Body() dto: GetNodeDto): Promise<Node> {
+  async delete(@Body() dto: GetNodeDto): Promise<Node[]> {
     return await this.fileService.delete(dto);
   }
 }
