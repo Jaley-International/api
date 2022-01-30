@@ -11,7 +11,7 @@ import { FilesystemModule } from '../filesystem/filesystem.module';
       type: 'mysql',
       url: process.env.DB_CON,
       autoLoadEntities: true,
-      dropSchema: true, // remove for production
+      dropSchema: false, // remove for production
       synchronize: true, // remove for production
     }),
     UserModule,

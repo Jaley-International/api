@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { existsSync, unlinkSync } from 'fs';
-import { Constants } from '../constants';
+import { Utils } from '../utils';
 
 export enum NodeType {
   FILE = 'file',
@@ -52,7 +52,7 @@ export class Node {
    */
   deleteStoredFile() {
     if (this.type === NodeType.FILE) {
-      const filePath = Constants.uploadFolder + this.ref;
+      const filePath = Utils.uploadFolder + this.ref;
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }

@@ -17,7 +17,10 @@ import {
   CreateFileDto,
   CreateFolderDto,
   CreateRootDto,
-  DeleteNodeDto,
+  GetNodeDto,
+  UpdateMetadataDto,
+  UpdateParentDto,
+  UpdateRefDto,
 } from './filesystem.dto';
 import { Node } from './filesystem.entity';
 import { diskStorage } from 'multer';
@@ -26,7 +29,7 @@ import {
   ApiNotFoundResponse,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Constants } from '../constants';
+import { Utils } from '../utils';
 
 @Controller('fileSystem')
 export class FilesystemController {
@@ -55,7 +58,7 @@ export class FilesystemController {
 
   /**
    * Adds a new root to the file system of the specified user.
-   * Returns to client the updated file system tree.
+   * Returns to client its updated file system tree.
    */
   @Post('createRoot')
   @ApiCreatedResponse({ description: 'root created' })
@@ -66,7 +69,7 @@ export class FilesystemController {
 
   /**
    * Inserts a new folder in a user workspace file system.
-   * Returns to client the updated file system tree.
+   * Returns to client its updated file system tree.
    */
   @Post('createFolder')
   @ApiCreatedResponse({ description: 'folder created' })
@@ -83,7 +86,7 @@ export class FilesystemController {
   @ApiCreatedResponse({ description: 'file uploaded' })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({ destination: Constants.tmpFolder }),
+      storage: diskStorage({ destination: Utils.tmpFolder }),
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): string {
@@ -95,8 +98,9 @@ export class FilesystemController {
 
   /**
    * Uploads a file object into the database architectures.
-   * Moves the previous uploaded file from temporary folder to permanent folder.
-   * Returns to client the updated file system tree.
+   * This requires to have previously uploaded a file
+   * in order to move it from temporary folder to permanent folder.
+   * Returns to client its updated file system tree.
    */
   @Post('createFile')
   @ApiCreatedResponse({ description: 'file created' })
@@ -106,13 +110,48 @@ export class FilesystemController {
   }
 
   /**
+   * Updates the in-database reference to a file.
+   * This requires to have previously uploaded a file
+   * in order to move it from temporary folder to permanent folder.
+   * Returns to client its updated file system tree.
+   */
+  @Post('overwriteFile')
+  @ApiResponse({ description: 'file overwritten' })
+  @ApiNotFoundResponse()
+  async updateRef(@Body() dto: UpdateRefDto): Promise<Node[]> {
+    return await this.fileService.updateRef(dto);
+  }
+
+  /**
+   * Updates a node's metadata.
+   * Returns to client its updated file system tree.
+   */
+  @Post('update')
+  @ApiResponse({ description: 'node updated' })
+  @ApiNotFoundResponse()
+  async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<Node[]> {
+    return await this.fileService.updateMetadata(dto);
+  }
+
+  /**
+   * Moves a node inside its tree.
+   * Returns to client its updated file system tree.
+   */
+  @Post('move')
+  @ApiResponse({ description: 'node moved' })
+  @ApiNotFoundResponse()
+  async updateParent(@Body() dto: UpdateParentDto): Promise<Node[]> {
+    return await this.fileService.updateParent(dto);
+  }
+
+  /**
    * Deletes a node by id and all of its descendant.
-   * Returns to client the deleted target node.
+   * Returns to client its deleted target node.
    */
   @Post('delete')
   @ApiResponse({ description: 'node deleted' })
   @ApiNotFoundResponse()
-  async delete(@Body() dto: DeleteNodeDto): Promise<Node> {
+  async delete(@Body() dto: GetNodeDto): Promise<Node> {
     return await this.fileService.delete(dto);
   }
 }
