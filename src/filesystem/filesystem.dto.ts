@@ -22,7 +22,7 @@ export class CreateRootDto {
   @ApiProperty()
   @IsDefined()
   @IsInt()
-  userId: number;
+  treeOwnerId: number;
 }
 
 export class CreateFolderDto extends CreateRootDto {

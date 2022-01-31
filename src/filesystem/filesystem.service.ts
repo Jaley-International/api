@@ -107,7 +107,7 @@ export class FilesystemService {
     newRootNode.type = NodeType.FOLDER;
     newRootNode.ref = null;
     newRootNode.encryptedParentKey = null;
-    newRootNode.treeOwner = await this.userService.findOne(dto.userId);
+    newRootNode.treeOwner = await this.userService.findOne(dto.treeOwnerId);
     newRootNode.parent = null;
 
     // database upload
@@ -129,10 +129,10 @@ export class FilesystemService {
     newFolderNode.type = NodeType.FOLDER;
     newFolderNode.ref = null;
     newFolderNode.encryptedParentKey = dto.encryptedParentKey;
-    newFolderNode.treeOwner = await this.userService.findOne(dto.userId);
+    newFolderNode.treeOwner = await this.userService.findOne(dto.treeOwnerId);
     newFolderNode.parent = await this.findOne(
       dto.parentId,
-      dto.userId,
+      dto.treeOwnerId,
       NodeType.FOLDER,
     );
 
@@ -156,10 +156,10 @@ export class FilesystemService {
     newFileNode.type = NodeType.FILE;
     newFileNode.ref = dto.encryptedFileName;
     newFileNode.encryptedParentKey = dto.encryptedParentKey;
-    newFileNode.treeOwner = await this.userService.findOne(dto.userId);
+    newFileNode.treeOwner = await this.userService.findOne(dto.treeOwnerId);
     newFileNode.parent = await this.findOne(
       dto.parentId,
-      dto.userId,
+      dto.treeOwnerId,
       NodeType.FOLDER,
     );
 
