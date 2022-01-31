@@ -2,16 +2,17 @@ import {
   BeforeInsert,
   Column,
   Entity,
-  ObjectID,
-  ObjectIdColumn,
+  OneToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Node } from '../filesystem/filesystem.entity';
 
 @Entity()
-export class UserEntity {
-  @ObjectIdColumn()
-  id: ObjectID;
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ unique: true })
+  @Column({ update: false })
   username: string;
 
   @Column()
@@ -29,15 +30,17 @@ export class UserEntity {
   @Column()
   rsaPublicSharingKey: string;
 
-  @Column({ unique: true })
+  @Column()
   email: string;
 
-  @BeforeInsert()
-  @Column({ array: true, default: [] })
-  sessionIdentifiers: string[] = [];
+  @Column('simple-array')
+  sessionIdentifiers: string[];
 
   @BeforeInsert()
   emailToLowercase() {
     this.email = this.email.toLocaleLowerCase();
   }
+
+  @OneToMany(() => Node, (node) => node.treeOwner)
+  nodes: Node[];
 }

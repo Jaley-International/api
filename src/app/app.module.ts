@@ -1,20 +1,21 @@
 import { Module } from '@nestjs/common';
-import { UserModule } from 'src/user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from '../user/user.entity';
+import { ConfigModule } from '@nestjs/config';
+import { UserModule } from '../user/user.module';
+import { FilesystemModule } from '../filesystem/filesystem.module';
 
 @Module({
   imports: [
-    UserModule,
-    TypeOrmModule.forFeature([UserEntity]),
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'mongodb',
-      url: 'mongodb+srv://agung:Tokowanda1@cluster0.cbpae.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-      database: 'test',
-      entities: ['dist/src/**/*.entity.js'],
+      type: 'mysql',
+      url: process.env.DB_CON,
       autoLoadEntities: true,
-      synchronize: true,
+      dropSchema: false, // remove for production
+      synchronize: true, // remove for production
     }),
+    UserModule,
+    FilesystemModule,
   ],
 })
 export class AppModule {}
