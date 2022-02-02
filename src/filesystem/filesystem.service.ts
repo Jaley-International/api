@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TreeRepository } from 'typeorm';
 import {
@@ -14,14 +19,25 @@ import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import { Utils } from '../utils';
+import findRemoveSync from 'find-remove';
 
 @Injectable()
-export class FilesystemService {
+export class FilesystemService implements OnModuleInit {
   constructor(
     @InjectRepository(Node)
     private nodeRepo: TreeRepository<Node>,
     private userService: UserService,
   ) {}
+
+  onModuleInit() {
+    // constantly checks for files old enough to be deleted in the tmp folder
+    setInterval(() => {
+      findRemoveSync(Utils.tmpFolder, {
+        files: '*.*',
+        age: { seconds: 60 },
+      });
+    });
+  }
 
   //TODO get the current connected user for security verification
 

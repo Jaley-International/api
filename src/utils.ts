@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, rename } from 'fs';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 export class Utils {
-  static readonly tmpFolder = './tmpUploads/';
+  static readonly tmpFolder = './tmp/';
   static readonly uploadFolder = './uploads/';
 
   /**
