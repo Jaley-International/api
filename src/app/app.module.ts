@@ -9,9 +9,9 @@ import { FilesystemModule } from '../filesystem/filesystem.module';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      url: process.env.DB_CON,
+      url: process.env.PEC_API_MYSQL_URI,
       autoLoadEntities: true,
-      dropSchema: false, // remove for production
+      dropSchema: true, // remove for production
       synchronize: true, // remove for production
     }),
     UserModule,
