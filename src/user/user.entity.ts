@@ -24,10 +24,10 @@ export class User {
   @Column()
   hashedAuthenticationKey: string;
 
-  @Column()
+  @Column({ length: 10000 })
   encryptedRsaPrivateSharingKey: string;
 
-  @Column()
+  @Column({ length: 1000 })
   rsaPublicSharingKey: string;
 
   @Column()
