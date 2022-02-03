@@ -36,7 +36,19 @@ export class UserService {
   async create(dto: CreateUserDto): Promise<User> {
     if (!(await this.mailExists(dto.email))) {
       if (!(await this.userExists(dto.username))) {
-        return await this.userRepo.save(dto);
+        const newUser = new User();
+
+        newUser.username = dto.username;
+        newUser.clientRandomValue = dto.clientRandomValue;
+        newUser.encryptedMasterKey = dto.encryptedMasterKey;
+        newUser.hashedAuthenticationKey = dto.hashedAuthenticationKey;
+        newUser.encryptedRsaPrivateSharingKey =
+          dto.encryptedRsaPrivateSharingKey;
+        newUser.rsaPublicSharingKey = dto.rsaPublicSharingKey;
+        newUser.email = dto.email;
+        newUser.sessionIdentifiers = [];
+
+        return await this.userRepo.save(newUser);
       } else {
         throw new HttpException('username already in use', HttpStatus.CONFLICT);
       }

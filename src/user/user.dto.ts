@@ -1,11 +1,4 @@
-import {
-  IsArray,
-  IsDefined,
-  IsEmail,
-  IsInt,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { IsDefined, IsEmail, IsInt, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GetSaltDto {
@@ -70,10 +63,6 @@ export class CreateUserDto {
   @IsDefined()
   @IsEmail()
   email: string;
-
-  @ApiProperty()
-  @IsArray()
-  sessionIdentifiers: string[];
 }
 
 export class UpdateUserDto {
