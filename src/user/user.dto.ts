@@ -1,20 +1,5 @@
-import {
-  IsArray,
-  IsDefined,
-  IsEmail,
-  IsInt,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { IsDefined, IsEmail, IsInt, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export class GetSaltDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
-  username: string;
-}
 
 export class AuthenticationDto {
   @ApiProperty()
@@ -70,10 +55,6 @@ export class CreateUserDto {
   @IsDefined()
   @IsEmail()
   email: string;
-
-  @ApiProperty()
-  @IsArray()
-  sessionIdentifiers: string[];
 }
 
 export class UpdateUserDto {
@@ -93,28 +74,4 @@ export class DeleteUserDto {
   @IsDefined()
   @IsInt()
   userId: number;
-}
-
-export class LoginResponseDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-f]{128}$/)
-  encryptedMasterKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-f]+$/)
-  encryptedRsaPrivateSharingKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  rsaPublicSharingKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  encryptedSessionIdentifier: string;
 }

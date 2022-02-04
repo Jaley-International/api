@@ -43,7 +43,7 @@ export class CreateFileDto extends CreateFolderDto {
   @IsDefined()
   @IsString()
   @IsNotEmpty()
-  encryptedFileName: string;
+  ref: string;
 }
 
 export class GetNodeDto {
@@ -77,5 +77,5 @@ export class UpdateRefDto extends GetNodeDto {
   @IsDefined()
   @IsString()
   @IsNotEmpty()
-  newEncryptedFileName: string;
+  newRef: string;
 }

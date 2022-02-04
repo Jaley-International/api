@@ -1,20 +1,20 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
-  GetSaltDto,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import {
   AuthenticationDto,
   CreateUserDto,
-  LoginResponseDto,
-  UpdateUserDto,
   DeleteUserDto,
+  UpdateUserDto,
 } from './user.dto';
 import { UserService } from './user.service';
-import { User } from './user.entity';
-import {
-  ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiNotFoundResponse,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { Communication, Status } from '../utils/communication';
 
 @Controller('users')
 export class UserController {
@@ -24,57 +24,68 @@ export class UserController {
    * Gets all existing users.
    */
   @Get()
-  @ApiResponse({ description: 'getting all users' })
-  async findAll(): Promise<User[]> {
-    return await this.userService.findAll();
+  async findAll(): Promise<object> {
+    const data = await this.userService.findAll();
+    return Communication.res(
+      Status.SUCCESS,
+      'Successfully got all users.',
+      data,
+    );
   }
 
   /**
    * Creates a new user.
    * Returns to client the newly created user.
    */
-  @Post('create')
-  @ApiCreatedResponse({ description: 'user created' })
-  @ApiConflictResponse({
-    description: 'user with same username/email already exists',
-  })
-  create(@Body() dto: CreateUserDto): Promise<User> {
-    return this.userService.create(dto);
+  @Post()
+  async create(@Body() dto: CreateUserDto): Promise<object> {
+    const data = await this.userService.create(dto);
+    return Communication.res(
+      Status.SUCCESS,
+      'Successfully created a new user account.',
+      data,
+    );
   }
 
   /**
    * Updates a user account parameters specified in the request.
    * Returns to client the updated user.
    */
-  @Post('update')
-  @ApiResponse({ description: 'user updated' })
-  @ApiNotFoundResponse()
-  async update(@Body() dto: UpdateUserDto): Promise<User> {
-    return await this.userService.update(dto);
+  @Patch()
+  async update(@Body() dto: UpdateUserDto): Promise<object> {
+    const data = await this.userService.update(dto);
+    return Communication.res(
+      Status.SUCCESS,
+      'Successfully updated user account data.',
+      data,
+    );
   }
 
   /**
    * Deletes a user by id and all its personal filesystem.
    * Returns to client the deleted user.
    */
-  @Post('delete')
-  @ApiResponse({ description: 'user deleted' })
-  @ApiNotFoundResponse()
-  async delete(@Body() dto: DeleteUserDto): Promise<User> {
-    return await this.userService.delete(dto);
+  @Delete()
+  async delete(@Body() dto: DeleteUserDto): Promise<object> {
+    const data = await this.userService.delete(dto);
+    return Communication.res(
+      Status.SUCCESS,
+      'Successfully deleted user and all of its filesystem.',
+      data,
+    );
   }
 
-  @Post('getSalt')
-  @ApiResponse({ description: 'getting salt' })
-  @ApiNotFoundResponse()
-  getSalt(@Body() dto: GetSaltDto): Promise<string> {
-    return this.userService.getSalt(dto);
+  @Get('salt/:username')
+  async getSalt(@Param('username') username: string): Promise<object> {
+    const data = await this.userService.getSalt(username);
+    return Communication.res(Status.SUCCESS, 'Successfully got salt.', {
+      salt: data,
+    });
   }
 
   @Post('login')
-  @ApiResponse({ description: 'user login' })
-  @ApiNotFoundResponse()
-  authentication(@Body() dto: AuthenticationDto): Promise<LoginResponseDto> {
-    return this.userService.authentication(dto);
+  async authentication(@Body() dto: AuthenticationDto): Promise<object> {
+    const data = await this.userService.authentication(dto);
+    return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
   }
 }
