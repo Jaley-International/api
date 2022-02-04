@@ -12,8 +12,8 @@ import { existsSync, unlinkSync } from 'fs';
 import { UploadFoldersManager } from '../utils/uploadFoldersManager';
 
 export enum NodeType {
-  FILE = 'file',
-  FOLDER = 'folder',
+  FILE = 'FILE',
+  FOLDER = 'FOLDER',
 }
 
 @Entity()
