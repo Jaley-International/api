@@ -52,10 +52,10 @@ export class Session {
   @PrimaryColumn()
   id: string;
 
-  @Column()
+  @Column({ type: 'bigint' })
   expire: number;
 
-  @Column()
+  @Column({ type: 'bigint' })
   issuedAt: number;
 
   @Column()
