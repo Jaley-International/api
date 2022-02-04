@@ -1,14 +1,6 @@
 import { IsDefined, IsEmail, IsInt, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class GetSaltDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
-  username: string;
-}
-
 export class AuthenticationDto {
   @ApiProperty()
   @IsDefined()

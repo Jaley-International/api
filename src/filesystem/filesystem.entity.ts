@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { existsSync, unlinkSync } from 'fs';
-import { Utils } from '../utils';
+import { UploadFoldersManager } from '../utils/uploadFoldersManager';
 
 export enum NodeType {
   FILE = 'file',
@@ -31,10 +31,10 @@ export class Node {
   @Column({ type: 'enum', enum: NodeType, update: false })
   type: NodeType;
 
-  @Column({ nullable: true })
+  @Column()
   ref: string;
 
-  @Column({ nullable: true })
+  @Column()
   encryptedParentKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
@@ -52,7 +52,7 @@ export class Node {
    */
   deleteStoredFile() {
     if (this.type === NodeType.FILE) {
-      const filePath = Utils.uploadFolder + this.ref;
+      const filePath = UploadFoldersManager.uploadFolder + this.ref;
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
