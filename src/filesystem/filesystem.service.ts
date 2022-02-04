@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
@@ -14,27 +14,15 @@ import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import { UploadFoldersManager } from '../utils/uploadFoldersManager';
-import findRemoveSync from 'find-remove';
 import { Communication, Status } from '../utils/communication';
 
 @Injectable()
-export class FilesystemService implements OnModuleInit {
+export class FilesystemService {
   constructor(
     @InjectRepository(Node)
     private nodeRepo: TreeRepository<Node>,
     private userService: UserService,
   ) {}
-
-  onModuleInit() {
-    // constantly checks for files old enough to be deleted in the tmp folder
-    //TODO fires timer event only when file is uploaded
-    setInterval(() => {
-      findRemoveSync(UploadFoldersManager.tmpFolder, {
-        files: '*.*',
-        age: { seconds: 60 },
-      });
-    });
-  }
 
   //TODO get the current connected user for security verification
 
@@ -137,6 +125,26 @@ export class FilesystemService implements OnModuleInit {
 
     // returns owner's trees
     return await this.getFileSystemFromUser(newFolder.treeOwner);
+  }
+
+  /**
+   * Throws an error if the file object in argument is not (undefined, empty, not uploaded...).
+   * This file will be deleted if he's still in the temporary folder after 30 seconds.
+   * Returns the name of the file.
+   */
+  uploadFile(file: Express.Multer.File): string {
+    if (file === undefined) {
+      throw Communication.err(
+        Status.ERROR_INVALID_FILE,
+        'Non existing or invalid file has been tried to be sent.',
+      );
+    }
+    // file will be deleted in 30 seconds
+    setTimeout(() => {
+      UploadFoldersManager.deleteTmpFile(file.filename);
+    }, 30000);
+
+    return file.filename;
   }
 
   /**

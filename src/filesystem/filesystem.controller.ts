@@ -97,14 +97,9 @@ export class FilesystemController {
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): object {
-    if (file === undefined) {
-      throw Communication.err(
-        Status.ERROR_INVALID_FILE,
-        'Non existing or invalid file has been tried to be sent.',
-      );
-    }
+    const data = this.fileService.uploadFile(file);
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
-      filename: file.filename,
+      filename: data,
     });
   }
 
