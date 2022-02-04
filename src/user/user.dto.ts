@@ -75,27 +75,3 @@ export class DeleteUserDto {
   @IsInt()
   userId: number;
 }
-
-export class LoginResponseDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-f]{128}$/)
-  encryptedMasterKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-f]+$/)
-  encryptedRsaPrivateSharingKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  rsaPublicSharingKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  encryptedSessionIdentifier: string;
-}

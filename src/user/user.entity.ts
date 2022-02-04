@@ -2,7 +2,9 @@ import {
   BeforeInsert,
   Column,
   Entity,
+  ManyToOne,
   OneToMany,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
@@ -33,14 +35,32 @@ export class User {
   @Column()
   email: string;
 
-  @Column('simple-array')
-  sessionIdentifiers: string[];
-
   @BeforeInsert()
   emailToLowercase() {
     this.email = this.email.toLocaleLowerCase();
   }
 
+  @OneToMany(() => Session, (session) => session.user)
+  sessions: Session[];
+
   @OneToMany(() => Node, (node) => node.treeOwner)
   nodes: Node[];
+}
+
+@Entity()
+export class Session {
+  @PrimaryColumn()
+  id: string;
+
+  @Column()
+  expire: number;
+
+  @Column()
+  issuedAt: number;
+
+  @Column()
+  ip: string;
+
+  @ManyToOne(() => User, (user) => user.sessions)
+  user: User;
 }

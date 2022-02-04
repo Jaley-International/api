@@ -11,8 +11,8 @@ import { FilesystemModule } from '../filesystem/filesystem.module';
       type: 'mysql',
       url: process.env.PEC_API_MYSQL_URI,
       autoLoadEntities: true,
-      dropSchema: true, // remove for production
-      synchronize: true, // remove for production
+      dropSchema: process.env.PEC_API_MODE === 'test',
+      synchronize: process.env.PEC_API_MODE !== 'production',
     }),
     UserModule,
     FilesystemModule,

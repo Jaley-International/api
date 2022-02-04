@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
-import { User } from './user.entity';
+import { Session, User } from './user.entity';
 import {
   AuthenticationDto,
   CreateUserDto,
   DeleteUserDto,
-  LoginResponseDto,
   UpdateUserDto,
 } from './user.dto';
 import {
@@ -25,6 +24,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(Session)
+    private sessionRepo: Repository<Session>,
   ) {}
 
   /**
@@ -62,7 +63,6 @@ export class UserService {
           dto.encryptedRsaPrivateSharingKey;
         newUser.rsaPublicSharingKey = dto.rsaPublicSharingKey;
         newUser.email = dto.email;
-        newUser.sessionIdentifiers = [];
         return await this.userRepo.save(newUser);
       } else {
         throw Communication.err(
@@ -129,26 +129,42 @@ export class UserService {
     }
   }
 
-  async authentication(dto: AuthenticationDto): Promise<LoginResponseDto> {
+  /**
+   * Authenticates an existing user.
+   * Creates a new session entity with an expiration date.
+   * Returns the encryption keys of the user.
+   * Throws an exception if user's credential are not valid.
+   */
+  async authentication(dto: AuthenticationDto): Promise<object> {
     const user = await this.userRepo.findOne({ username: dto.username });
 
     if (user !== undefined) {
       const key = sha512(dto.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {
-        const session = generateSessionIdentifier();
-        user.sessionIdentifiers.push(session);
-        await this.userRepo.save(user);
+        // session creation
+        const session = new Session();
+        session.id = generateSessionIdentifier();
+        session.issuedAt = Date.now();
+        session.expire =
+          Date.now() + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME);
+        session.ip = '0.0.0.0'; //TODO get user ip
+        session.user = user;
 
-        const res = new LoginResponseDto();
-        res.encryptedMasterKey = user.encryptedMasterKey;
-        res.encryptedRsaPrivateSharingKey = user.encryptedRsaPrivateSharingKey;
-        res.rsaPublicSharingKey = user.rsaPublicSharingKey;
-        res.encryptedSessionIdentifier = rsaPublicEncrypt(
-          user.rsaPublicSharingKey,
-          session,
-        );
-        return res;
+        // database upload
+        await this.sessionRepo.save(session);
+
+        // returning encryption keys and connection information
+        return {
+          encryptedMasterKey: user.encryptedMasterKey,
+          encryptedRsaPrivateSharingKey: user.encryptedRsaPrivateSharingKey,
+          rsaPublicSharingKey: user.rsaPublicSharingKey,
+          encryptedSessionIdentifier: rsaPublicEncrypt(
+            user.rsaPublicSharingKey,
+            session.id,
+          ),
+          sessionExpire: session.expire,
+        };
       }
     }
     throw Communication.err(
