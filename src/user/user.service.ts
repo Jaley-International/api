@@ -52,8 +52,8 @@ export class UserService {
    * Throws an exception if the email or username is already used.
    */
   async create(dto: CreateUserDto): Promise<User> {
-    if (!(await this.mailExists(dto.email))) {
-      if (!(await this.userExists(dto.username))) {
+    if (!(await this.userExists(dto.username))) {
+      if (!(await this.mailExists(dto.email))) {
         const newUser = new User();
         newUser.username = dto.username;
         newUser.clientRandomValue = dto.clientRandomValue;
@@ -66,14 +66,14 @@ export class UserService {
         return await this.userRepo.save(newUser);
       } else {
         throw Communication.err(
-          Status.ERROR_USERNAME_ALREADY_USED,
-          'Username already in use.',
+          Status.ERROR_EMAIL_ALREADY_USED,
+          'Email already in use.',
         );
       }
     } else {
       throw Communication.err(
-        Status.ERROR_EMAIL_ALREADY_USED,
-        'Email already in use.',
+        Status.ERROR_USERNAME_ALREADY_USED,
+        'Username already in use.',
       );
     }
   }
@@ -130,12 +130,12 @@ export class UserService {
   }
 
   /**
-   * Authenticates an existing user.
+   * Logs in an existing user.
    * Creates a new session entity with an expiration date.
    * Returns the encryption keys of the user.
    * Throws an exception if user's credential are not valid.
    */
-  async authentication(dto: AuthenticationDto): Promise<object> {
+  async login(dto: AuthenticationDto): Promise<object> {
     const user = await this.userRepo.findOne({ username: dto.username });
 
     if (user !== undefined) {

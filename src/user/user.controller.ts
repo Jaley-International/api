@@ -84,8 +84,8 @@ export class UserController {
   }
 
   @Post('login')
-  async authentication(@Body() dto: AuthenticationDto): Promise<object> {
-    const data = await this.userService.authentication(dto);
+  async login(@Body() dto: AuthenticationDto): Promise<object> {
+    const data = await this.userService.login(dto);
     return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
   }
 }
