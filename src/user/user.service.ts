@@ -1,23 +1,24 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { User } from './user.entity';
 import {
-  CreateUserDto,
   AuthenticationDto,
-  LoginResponseDto,
+  CreateUserDto,
   DeleteUserDto,
+  LoginResponseDto,
   UpdateUserDto,
 } from './user.dto';
 import {
+  addPadding,
+  generateSessionIdentifier,
   INSTANCE_ID,
+  rsaPublicEncrypt,
   SERVER_RANDOM_VALUE,
   sha256,
   sha512,
-  addPadding,
-  generateSessionIdentifier,
-  rsaPublicEncrypt,
 } from 'src/utils/security';
+import { Communication, Status } from '../utils/communication';
 
 @Injectable()
 export class UserService {
@@ -40,7 +41,7 @@ export class UserService {
   async findOne(options: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepo.findOne(options);
     if (user === undefined) {
-      throw new HttpException('user not found', HttpStatus.NOT_FOUND);
+      throw Communication.err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
   }
@@ -62,13 +63,18 @@ export class UserService {
         newUser.rsaPublicSharingKey = dto.rsaPublicSharingKey;
         newUser.email = dto.email;
         newUser.sessionIdentifiers = [];
-
         return await this.userRepo.save(newUser);
       } else {
-        throw new HttpException('username already in use', HttpStatus.CONFLICT);
+        throw Communication.err(
+          Status.ERROR_USERNAME_ALREADY_USED,
+          'Username already in use.',
+        );
       }
     } else {
-      throw new HttpException('Email already in use', HttpStatus.CONFLICT);
+      throw Communication.err(
+        Status.ERROR_EMAIL_ALREADY_USED,
+        'Email already in use.',
+      );
     }
   }
 
@@ -125,6 +131,7 @@ export class UserService {
 
   async authentication(dto: AuthenticationDto): Promise<LoginResponseDto> {
     const user = await this.userRepo.findOne({ username: dto.username });
+
     if (user !== undefined) {
       const key = sha512(dto.derivedAuthenticationKey);
 
@@ -142,10 +149,12 @@ export class UserService {
           session,
         );
         return res;
-      } else
-        throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-    } else
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+      }
+    }
+    throw Communication.err(
+      Status.ERROR_INVALID_CREDENTIALS,
+      'Invalid credentials.',
+    );
   }
 
   private async mailExists(email: string): Promise<boolean> {

@@ -1,9 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
@@ -20,6 +15,7 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import { UploadFoldersManager } from '../utils/uploadFoldersManager';
 import findRemoveSync from 'find-remove';
+import { Communication, Status } from '../utils/communication';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -49,7 +45,7 @@ export class FilesystemService implements OnModuleInit {
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);
     if (node === undefined) {
-      throw new HttpException('node not found', HttpStatus.NOT_FOUND);
+      throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
     }
     return node;
   }
@@ -71,9 +67,6 @@ export class FilesystemService implements OnModuleInit {
     const roots = await this.nodeRepo.find({
       where: { parent: null, type: NodeType.FOLDER, treeOwner: user },
     });
-    if (roots.length === 0) {
-      throw new HttpException('no roots found', HttpStatus.NOT_FOUND);
-    }
 
     // generating all the trees from user's roots
     const trees = [];

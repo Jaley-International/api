@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpException,
-  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -55,7 +53,7 @@ export class FilesystemController {
     const data = await this.fileService.getFileSystemFromUserId(userId);
     return Communication.res(
       Status.SUCCESS,
-      "Successfully got all user's file system",
+      "Successfully user's file system",
       data,
     );
   }
@@ -100,9 +98,9 @@ export class FilesystemController {
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): object {
     if (file === undefined) {
-      throw new HttpException(
+      throw Communication.err(
+        Status.ERROR_INVALID_FILE,
         'Non existing or invalid file has been tried to be sent.',
-        HttpStatus.BAD_REQUEST,
       );
     }
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
