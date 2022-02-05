@@ -25,12 +25,7 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
-import {
-  ApiCreatedResponse,
-  ApiNotFoundResponse,
-  ApiResponse,
-} from '@nestjs/swagger';
-import { Constants } from '../logic/constants';
+import { ApiCreatedResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { UploadFoldersManager } from '../utils/uploadFoldersManager';

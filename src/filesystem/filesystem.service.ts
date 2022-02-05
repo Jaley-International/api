@@ -302,11 +302,11 @@ export class FilesystemService {
     });
     //if found return the path
     if (file) {
-      return Constants.uploadFolder + file.ref;
+      return UploadFoldersManager.uploadFolder + file.ref;
     }
     //return 404 not found if not found
     else {
-      throw new HttpException('file not found', HttpStatus.NOT_FOUND);
+      throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'file not found');
     }
   }
 }

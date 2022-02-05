@@ -83,6 +83,6 @@ export class UpdateRefDto extends GetNodeDto {
 export class DownloadFileDto {
   @ApiProperty()
   @IsDefined()
-  @IsNumber()
+  @IsInt()
   NodeId: number;
 }
