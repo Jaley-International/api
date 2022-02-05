@@ -5,16 +5,17 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
-import { Express } from 'express';
 import {
   CreateFileDto,
   CreateFolderDto,
   CreateRootDto,
+  DownloadFileDto,
 } from './filesystem.dto';
 import { Node } from './filesystem.entity';
 import { diskStorage } from 'multer';
@@ -24,6 +25,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Constants } from '../logic/constants';
+import { createReadStream } from 'graceful-fs';
+import { join } from 'path';
 
 @Controller('fileSystem')
 export class FilesystemController {
@@ -97,5 +100,18 @@ export class FilesystemController {
   @ApiNotFoundResponse()
   async createFile(@Body() dto: CreateFileDto): Promise<Node[]> {
     return await this.fileService.createFile(dto);
+  }
+
+  /**
+   * Download a file based on the id of the file
+   * Returns to client the file.
+   */
+  @Post('downloadFile')
+  @ApiCreatedResponse({ description: 'file created' })
+  @ApiNotFoundResponse()
+  async downloadFile(@Body() dto: DownloadFileDto): Promise<any> {
+    const file = await this.fileService.findFile(dto.NodeId);
+    const stream = createReadStream(join(process.cwd(), file));
+    return new StreamableFile(stream);
   }
 }

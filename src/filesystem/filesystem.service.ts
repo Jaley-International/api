@@ -173,4 +173,23 @@ export class FilesystemService {
     // return the trees owned by the user
     return await this.getFileSystemFromUser(newFileNode.workspaceOwner);
   }
+
+  /**
+   * Find the Node entity of the file in the database
+   * Return the path of the file or an error if not found
+   */
+  async findFile(idNumber: number): Promise<string> {
+    //find  the file with exact NodeId
+    const file = await this.nodeRepo.findOne({
+      where: { id: idNumber },
+    });
+    //if found return the path
+    if (file) {
+      return Constants.uploadFolder + file.ref;
+    }
+    //return 404 not found if not found
+    else {
+      throw new HttpException('file not found', HttpStatus.NOT_FOUND);
+    }
+  }
 }

@@ -88,3 +88,10 @@ export class CreateRootDto {
   @IsNumber()
   userId: number;
 }
+
+export class DownloadFileDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsNumber()
+  NodeId: number;
+}
