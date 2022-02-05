@@ -8,12 +8,12 @@ import {
   TreeParent,
 } from 'typeorm';
 import { User } from '../user/user.entity';
-import { unlinkSync } from 'fs';
-import { Constants } from '../logic/constants';
+import { existsSync, unlinkSync } from 'fs';
+import { UploadFoldersManager } from '../utils/uploadFoldersManager';
 
 export enum NodeType {
-  FILE = 'file',
-  FOLDER = 'folder',
+  FILE = 'FILE',
+  FOLDER = 'FOLDER',
 }
 
 @Entity()
@@ -31,14 +31,14 @@ export class Node {
   @Column({ type: 'enum', enum: NodeType, update: false })
   type: NodeType;
 
-  @Column({ nullable: true })
+  @Column()
   ref: string;
 
-  @Column({ nullable: true })
+  @Column()
   encryptedParentKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
-  workspaceOwner: User;
+  treeOwner: User;
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;
@@ -52,7 +52,10 @@ export class Node {
    */
   deleteStoredFile() {
     if (this.type === NodeType.FILE) {
-      unlinkSync(Constants.uploadFolder + this.ref);
+      const filePath = UploadFoldersManager.uploadFolder + this.ref;
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
     }
   }
 }

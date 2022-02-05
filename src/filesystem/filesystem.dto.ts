@@ -1,75 +1,11 @@
 import {
   IsDefined,
+  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsString,
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export class CreateFileDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @IsNotEmpty()
-  encryptedFileName: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  encryptedMetadata: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedParentKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsNumber()
-  parentId: number;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsNumber()
-  userId: number;
-}
-
-export class CreateFolderDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  encryptedMetadata: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedParentKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsNumber()
-  parentId: number;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsNumber()
-  userId: number;
-}
 
 export class CreateRootDto {
   @ApiProperty()
@@ -85,8 +21,63 @@ export class CreateRootDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsNumber()
-  userId: number;
+  @IsInt()
+  treeOwnerId: number;
+}
+
+export class CreateFolderDto extends CreateRootDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z]+$/)
+  encryptedParentKey: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsInt()
+  parentId: number;
+}
+
+export class CreateFileDto extends CreateFolderDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @IsNotEmpty()
+  ref: string;
+}
+
+export class GetNodeDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsInt()
+  nodeId: number;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsInt()
+  treeOwnerId: number;
+}
+
+export class UpdateMetadataDto extends GetNodeDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  newEncryptedMetadata: string;
+}
+
+export class UpdateParentDto extends GetNodeDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsInt()
+  newParentId: number;
+}
+
+export class UpdateRefDto extends GetNodeDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @IsNotEmpty()
+  newRef: string;
 }
 
 export class DownloadFileDto {
