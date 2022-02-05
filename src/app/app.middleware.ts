@@ -24,7 +24,7 @@ export async function sessionValidator(
 
   // checking if the session exist and is not expired
   const session = await sessionRepo.findOne({
-    where: { id: token }, //TODO check expiration
+    where: { id: token, where: { id: token } },
     relations: ['user'],
   });
   if (!session) {
