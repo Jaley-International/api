@@ -147,7 +147,7 @@ export class UserService {
         session.id = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
-          Date.now() + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME);
+          Date.now() + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
 
