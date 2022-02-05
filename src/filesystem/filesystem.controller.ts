@@ -130,7 +130,7 @@ export class FilesystemController {
    * in order to move it from temporary folder to permanent folder.
    * Returns to client its updated file system tree.
    */
-  @Patch('file')
+  @Patch('ref')
   async updateRef(@Body() dto: UpdateRefDto): Promise<object> {
     const data = await this.fileService.updateRef(dto);
     return Communication.res(
