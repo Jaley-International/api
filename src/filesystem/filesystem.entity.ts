@@ -38,7 +38,7 @@ export class Node {
   encryptedParentKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
-  treeOwner: User;
+  owner: User;
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;

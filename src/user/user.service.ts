@@ -97,7 +97,7 @@ export class UserService {
   async delete(dto: DeleteUserDto): Promise<User> {
     // loads the target user with its nodes
     const user = await this.findOne({
-      where: { id: dto.userId },
+      where: { id: dto.user.id },
       relations: ['nodes'],
     });
 

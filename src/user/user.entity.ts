@@ -43,7 +43,7 @@ export class User {
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];
 
-  @OneToMany(() => Node, (node) => node.treeOwner)
+  @OneToMany(() => Node, (node) => node.owner)
   nodes: Node[];
 }
 

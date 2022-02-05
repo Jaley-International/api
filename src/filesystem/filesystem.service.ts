@@ -53,7 +53,7 @@ export class FilesystemService {
   async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
     const roots = await this.nodeRepo.find({
-      where: { parent: null, type: NodeType.FOLDER, treeOwner: user },
+      where: { parent: null, type: NodeType.FOLDER, owner: user },
     });
 
     // generating all the trees from user's roots
@@ -84,16 +84,14 @@ export class FilesystemService {
     newRoot.type = NodeType.FOLDER;
     newRoot.ref = '';
     newRoot.encryptedParentKey = '';
-    newRoot.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
+    newRoot.owner = dto.user;
     newRoot.parent = null;
 
     // database upload
     await this.nodeRepo.save(newRoot);
 
     // return the trees owned by the user
-    return await this.getFileSystemFromUser(newRoot.treeOwner);
+    return await this.getFileSystemFromUser(newRoot.owner);
   }
 
   /**
@@ -108,15 +106,13 @@ export class FilesystemService {
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
     newFolder.encryptedParentKey = dto.encryptedParentKey;
-    newFolder.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
+    newFolder.owner = dto.user;
 
     newFolder.parent = await this.nodeRepo.findOne({
       where: {
         id: dto.parentId,
         type: NodeType.FOLDER,
-        treeOwner: newFolder.treeOwner,
+        owner: newFolder.owner,
       },
     });
 
@@ -124,7 +120,7 @@ export class FilesystemService {
     await this.nodeRepo.save(newFolder);
 
     // returns owner's trees
-    return await this.getFileSystemFromUser(newFolder.treeOwner);
+    return await this.getFileSystemFromUser(newFolder.owner);
   }
 
   /**
@@ -160,13 +156,11 @@ export class FilesystemService {
     newFile.type = NodeType.FILE;
     newFile.ref = dto.ref;
     newFile.encryptedParentKey = dto.encryptedParentKey;
-    newFile.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
+    newFile.owner = dto.user;
     newFile.parent = await this.findOne({
       where: {
         id: dto.parentId,
-        treeOwner: newFile.treeOwner,
+        owner: newFile.owner,
         type: NodeType.FOLDER,
       },
     });
@@ -178,7 +172,7 @@ export class FilesystemService {
     await this.nodeRepo.save(newFile);
 
     // returns owner's trees
-    return await this.getFileSystemFromUser(newFile.treeOwner);
+    return await this.getFileSystemFromUser(newFile.owner);
   }
 
   /**
@@ -187,13 +181,10 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateRef(dto: UpdateRefDto) {
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
         type: NodeType.FILE,
       },
     });
@@ -208,7 +199,7 @@ export class FilesystemService {
     node.ref = dto.newRef;
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -216,13 +207,10 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateMetadata(dto: UpdateMetadataDto) {
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
 
@@ -230,7 +218,7 @@ export class FilesystemService {
     node.encryptedMetadata = dto.newEncryptedMetadata;
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -239,13 +227,10 @@ export class FilesystemService {
    */
   async updateParent(dto: UpdateParentDto) {
     // finding the node to move
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
 
@@ -253,13 +238,13 @@ export class FilesystemService {
     node.parent = await this.findOne({
       where: {
         id: dto.newParentId,
-        treeOwner: treeOwner,
+        owner: dto.user,
         type: NodeType.FOLDER,
       },
     });
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -268,13 +253,10 @@ export class FilesystemService {
    */
   async delete(dto: GetNodeDto): Promise<Node[]> {
     // finding the node to delete
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
     const descendants = await this.nodeRepo.findDescendants(node);
@@ -288,7 +270,7 @@ export class FilesystemService {
     // removes the target node form database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**

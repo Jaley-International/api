@@ -95,7 +95,7 @@ export class FilesystemController {
    * Uploads the posted file in server disk storage into a temporary folder.
    * Returns to client the random generated file name.
    */
-  @Post('document')
+  @Post('content')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({ destination: UploadFoldersManager.tmpFolder }),
@@ -104,7 +104,7 @@ export class FilesystemController {
   uploadFile(@UploadedFile() file: Express.Multer.File): object {
     const data = this.fileService.uploadFile(file);
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
-      filename: data,
+      ref: data,
     });
   }
 
