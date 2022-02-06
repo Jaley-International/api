@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, rename, unlinkSync } from 'fs';
 import findRemoveSync from 'find-remove';
 import { Communication, Status } from './communication';
 import { NodeType, Node } from '../filesystem/filesystem.entity';
+import { join } from 'path';
 
 export class UploadsManager {
   static readonly tmpFolder = './tmp/';
@@ -12,8 +13,8 @@ export class UploadsManager {
    * Throws an exception if no file is found in the temporary folder.
    */
   static moveFileFromTmpToPermanent(filename: string) {
-    const currentFilePath = UploadsManager.tmpFolder + filename;
-    const newFilePath = UploadsManager.uploadFolder + filename;
+    const currentFilePath = join(UploadsManager.tmpFolder, filename);
+    const newFilePath = join(UploadsManager.uploadFolder, filename);
 
     // checking if desired file exist in tmp folder
     if (!existsSync(currentFilePath)) {
@@ -57,7 +58,7 @@ export class UploadsManager {
    */
   static deletePermanentFile(node: Node) {
     if (node.type === NodeType.FILE) {
-      const filePath = UploadsManager.uploadFolder + node.ref;
+      const filePath = join(UploadsManager.uploadFolder, node.ref);
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
