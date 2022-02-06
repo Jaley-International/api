@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -180,13 +181,12 @@ export class FilesystemController {
   /**
    * Gets the corresponding file of a node found by id.
    */
-  @Get('content:nodeid')
+  @Get('content/:nodeid')
   async downloadFile(
     @Param('nodeid', ParseIntPipe) nodeId: number,
-  ): Promise<object> {
-    const data = await this.fileService.getFile(nodeId);
-    return Communication.res(Status.SUCCESS, 'Successfully downloaded file', {
-      file: data,
-    });
+  ): Promise<StreamableFile> {
+    // returns directly the encrypted file,
+    // not encapsulated in a response body like the other routes
+    return await this.fileService.getFile(nodeId);
   }
 }
