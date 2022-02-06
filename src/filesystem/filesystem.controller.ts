@@ -28,7 +28,7 @@ import { diskStorage } from 'multer';
 import { ApiCreatedResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
-import { UploadFoldersManager } from '../utils/uploadFoldersManager';
+import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
 
 @Controller('filesystems')
@@ -98,7 +98,7 @@ export class FilesystemController {
   @Post('content')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({ destination: UploadFoldersManager.tmpFolder }),
+      storage: diskStorage({ destination: UploadsManager.tmpFolder }),
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): object {

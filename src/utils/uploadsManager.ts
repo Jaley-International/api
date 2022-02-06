@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, rename } from 'fs';
+import { existsSync, mkdirSync, rename, unlinkSync } from 'fs';
 import findRemoveSync from 'find-remove';
 import { Communication, Status } from './communication';
+import { NodeType, Node } from '../filesystem/filesystem.entity';
 
-export class UploadFoldersManager {
+export class UploadsManager {
   static readonly tmpFolder = './tmp/';
   static readonly uploadFolder = './uploads/';
 
@@ -11,8 +12,8 @@ export class UploadFoldersManager {
    * Throws an exception if no file is found in the temporary folder.
    */
   static moveFileFromTmpToPermanent(filename: string) {
-    const currentFilePath = UploadFoldersManager.tmpFolder + filename;
-    const newFilePath = UploadFoldersManager.uploadFolder + filename;
+    const currentFilePath = UploadsManager.tmpFolder + filename;
+    const newFilePath = UploadsManager.uploadFolder + filename;
 
     // checking if desired file exist in tmp folder
     if (!existsSync(currentFilePath)) {
@@ -23,8 +24,8 @@ export class UploadFoldersManager {
     }
     // checks if upload directory exist, creates it if not
     // prevents error during file renaming below
-    if (!existsSync(UploadFoldersManager.uploadFolder)) {
-      mkdirSync(UploadFoldersManager.uploadFolder);
+    if (!existsSync(UploadsManager.uploadFolder)) {
+      mkdirSync(UploadsManager.uploadFolder);
     }
     // moving file from temporary disk folder to permanent folder
     rename(currentFilePath, newFilePath, (err) => {
@@ -36,7 +37,7 @@ export class UploadFoldersManager {
    * Deletes files old enough inside the temporary folder.
    */
   static purgeTmpFolder() {
-    findRemoveSync(UploadFoldersManager.tmpFolder, {
+    findRemoveSync(UploadsManager.tmpFolder, {
       files: '*.*',
     });
   }
@@ -45,7 +46,7 @@ export class UploadFoldersManager {
    * Deletes files old enough inside the temporary folder after 30 seconds.
    */
   static deleteTmpFile(filename: string) {
-    findRemoveSync(UploadFoldersManager.tmpFolder, {
+    findRemoveSync(UploadsManager.tmpFolder, {
       files: filename,
     });
   }

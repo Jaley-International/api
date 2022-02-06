@@ -41,7 +41,7 @@ export class UserService {
    */
   async findOne(options: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepo.findOne(options);
-    if (user === undefined) {
+    if (!user) {
       throw Communication.err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
@@ -118,7 +118,7 @@ export class UserService {
    */
   async getSalt(username: string): Promise<string> {
     const user = await this.userRepo.findOne({ where: { username: username } });
-    if (user !== undefined) {
+    if (!user) {
       return sha256(
         addPadding(username + INSTANCE_ID + user.clientRandomValue, 128),
       );
@@ -138,7 +138,7 @@ export class UserService {
   async login(dto: AuthenticationDto): Promise<object> {
     const user = await this.userRepo.findOne({ username: dto.username });
 
-    if (user !== undefined) {
+    if (user) {
       const key = sha512(dto.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {

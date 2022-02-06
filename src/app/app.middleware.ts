@@ -34,7 +34,7 @@ export async function sessionValidator(
     );
   }
 
-  // incorporate user in the request body
+  // incorporates corresponding user in the request body
   req.body.user = session.user;
 
   // continues to the route if everything is alright

@@ -13,7 +13,7 @@ import {
 import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
-import { UploadFoldersManager } from '../utils/uploadFoldersManager';
+import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
 
 @Injectable()
@@ -24,15 +24,13 @@ export class FilesystemService {
     private userService: UserService,
   ) {}
 
-  //TODO get the current connected user for security verification
-
   /**
    * Basic findOne function on Node repository,
    * but throws an error when no node is found.
    */
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);
-    if (node === undefined) {
+    if (!node) {
       throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
     }
     return node;
@@ -40,7 +38,6 @@ export class FilesystemService {
 
   /**
    * Returns all the file system trees of all users.
-   * May be deleted for production.
    */
   async findAll(): Promise<Node[]> {
     return await this.nodeRepo.findTrees();
@@ -48,7 +45,6 @@ export class FilesystemService {
 
   /**
    * Returns the file system tree owned by the user passed in parameter.
-   * Throws an exception if no roots are found.
    */
   async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
@@ -124,20 +120,22 @@ export class FilesystemService {
   }
 
   /**
-   * Throws an error if the file object in argument is not (undefined, empty, not uploaded...).
+   * Throws an error if the file object in argument is invalid (undefined, empty, not uploaded...).
    * This file will be deleted if he's still in the temporary folder after 30 seconds.
    * Returns the name of the file.
    */
   uploadFile(file: Express.Multer.File): string {
-    if (file === undefined) {
+    // error on invalid file
+    if (!file) {
       throw Communication.err(
         Status.ERROR_INVALID_FILE,
         'Non existing or invalid file has been tried to be sent.',
       );
     }
+
     // file will be deleted in 30 seconds
     setTimeout(() => {
-      UploadFoldersManager.deleteTmpFile(file.filename);
+      UploadsManager.deleteTmpFile(file.filename);
     }, 30000);
 
     return file.filename;
@@ -166,7 +164,7 @@ export class FilesystemService {
     });
 
     // moving file from temporary folder
-    UploadFoldersManager.moveFileFromTmpToPermanent(dto.ref);
+    UploadsManager.moveFileFromTmpToPermanent(dto.ref);
 
     // database upload
     await this.nodeRepo.save(newFile);
@@ -190,7 +188,7 @@ export class FilesystemService {
     });
 
     // moving file from temporary folder
-    UploadFoldersManager.moveFileFromTmpToPermanent(dto.newRef);
+    UploadsManager.moveFileFromTmpToPermanent(dto.newRef);
 
     // deleting old file
     node.deleteStoredFile();
@@ -284,7 +282,7 @@ export class FilesystemService {
     });
     //if found return the path
     if (file) {
-      return UploadFoldersManager.uploadFolder + file.ref;
+      return UploadsManager.uploadFolder + file.ref;
     }
     //return 404 not found if not found
     else {
