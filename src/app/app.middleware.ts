@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { Communication, Status } from '../utils/communication';
-import { getConnection } from 'typeorm';
+import { getConnection, MoreThan } from 'typeorm';
 import { Session } from '../user/user.entity';
 
 export async function sessionValidator(
@@ -24,7 +24,7 @@ export async function sessionValidator(
 
   // checking if the session exist and is not expired
   const session = await sessionRepo.findOne({
-    where: { id: token, where: { id: token } },
+    where: { id: token, expire: MoreThan(Date.now()) },
     relations: ['user'],
   });
   if (!session) {
