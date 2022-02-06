@@ -1,5 +1,6 @@
-import { IsDefined, IsEmail, IsInt, IsString, Matches } from 'class-validator';
+import { IsDefined, IsEmail, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from './user.entity';
 
 export class AuthenticationDto {
   @ApiProperty()
@@ -60,8 +61,7 @@ export class CreateUserDto {
 export class UpdateUserDto {
   @ApiProperty()
   @IsDefined()
-  @IsInt()
-  userId: number;
+  user: User;
 
   @ApiProperty()
   @IsDefined()
@@ -72,6 +72,5 @@ export class UpdateUserDto {
 export class DeleteUserDto {
   @ApiProperty()
   @IsDefined()
-  @IsInt()
-  userId: number;
+  user: User;
 }

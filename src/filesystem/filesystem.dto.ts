@@ -6,6 +6,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from '../user/user.entity';
 
 export class CreateRootDto {
   @ApiProperty()
@@ -21,8 +22,7 @@ export class CreateRootDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsInt()
-  treeOwnerId: number;
+  user: User;
 }
 
 export class CreateFolderDto extends CreateRootDto {
@@ -54,8 +54,7 @@ export class GetNodeDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsInt()
-  treeOwnerId: number;
+  user: User;
 }
 
 export class UpdateMetadataDto extends GetNodeDto {

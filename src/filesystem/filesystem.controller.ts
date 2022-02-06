@@ -23,7 +23,7 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
-import { UploadFoldersManager } from '../utils/uploadFoldersManager';
+import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
 
 @Controller('filesystems')
@@ -90,16 +90,16 @@ export class FilesystemController {
    * Uploads the posted file in server disk storage into a temporary folder.
    * Returns to client the random generated file name.
    */
-  @Post('document')
+  @Post('content')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({ destination: UploadFoldersManager.tmpFolder }),
+      storage: diskStorage({ destination: UploadsManager.tmpFolder }),
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): object {
     const data = this.fileService.uploadFile(file);
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
-      filename: data,
+      ref: data,
     });
   }
 
@@ -125,7 +125,7 @@ export class FilesystemController {
    * in order to move it from temporary folder to permanent folder.
    * Returns to client its updated file system tree.
    */
-  @Patch('file')
+  @Patch('ref')
   async updateRef(@Body() dto: UpdateRefDto): Promise<object> {
     const data = await this.fileService.updateRef(dto);
     return Communication.res(
@@ -175,5 +175,18 @@ export class FilesystemController {
       'Successfully deleted file.',
       data,
     );
+  }
+
+  /**
+   * Gets the corresponding file of a node found by id.
+   */
+  @Get('content:nodeid')
+  async downloadFile(
+    @Param('nodeid', ParseIntPipe) nodeId: number,
+  ): Promise<object> {
+    const data = await this.fileService.getFile(nodeId);
+    return Communication.res(Status.SUCCESS, 'Successfully downloaded file', {
+      file: data,
+    });
   }
 }

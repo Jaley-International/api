@@ -18,6 +18,14 @@ export class User {
   username: string;
 
   @Column()
+  email: string;
+
+  @BeforeInsert()
+  emailToLowercase() {
+    this.email = this.email.toLocaleLowerCase();
+  }
+
+  @Column()
   clientRandomValue: string;
 
   @Column()
@@ -32,18 +40,10 @@ export class User {
   @Column({ length: 1000 })
   rsaPublicSharingKey: string;
 
-  @Column()
-  email: string;
-
-  @BeforeInsert()
-  emailToLowercase() {
-    this.email = this.email.toLocaleLowerCase();
-  }
-
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];
 
-  @OneToMany(() => Node, (node) => node.treeOwner)
+  @OneToMany(() => Node, (node) => node.owner)
   nodes: Node[];
 }
 

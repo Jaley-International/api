@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
@@ -13,8 +13,10 @@ import {
 import { Node, NodeType } from './filesystem.entity';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
-import { UploadFoldersManager } from '../utils/uploadFoldersManager';
+import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
+import { createReadStream } from 'graceful-fs';
+import { join } from 'path';
 
 @Injectable()
 export class FilesystemService {
@@ -24,15 +26,13 @@ export class FilesystemService {
     private userService: UserService,
   ) {}
 
-  //TODO get the current connected user for security verification
-
   /**
    * Basic findOne function on Node repository,
    * but throws an error when no node is found.
    */
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);
-    if (node === undefined) {
+    if (!node) {
       throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
     }
     return node;
@@ -40,7 +40,6 @@ export class FilesystemService {
 
   /**
    * Returns all the file system trees of all users.
-   * May be deleted for production.
    */
   async findAll(): Promise<Node[]> {
     return await this.nodeRepo.findTrees();
@@ -48,12 +47,11 @@ export class FilesystemService {
 
   /**
    * Returns the file system tree owned by the user passed in parameter.
-   * Throws an exception if no roots are found.
    */
   async getFileSystemFromUser(user: User): Promise<Node[]> {
     // getting all user's roots
     const roots = await this.nodeRepo.find({
-      where: { parent: null, type: NodeType.FOLDER, treeOwner: user },
+      where: { parent: null, type: NodeType.FOLDER, owner: user },
     });
 
     // generating all the trees from user's roots
@@ -84,16 +82,14 @@ export class FilesystemService {
     newRoot.type = NodeType.FOLDER;
     newRoot.ref = '';
     newRoot.encryptedParentKey = '';
-    newRoot.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
+    newRoot.owner = dto.user;
     newRoot.parent = null;
 
     // database upload
     await this.nodeRepo.save(newRoot);
 
     // return the trees owned by the user
-    return await this.getFileSystemFromUser(newRoot.treeOwner);
+    return await this.getFileSystemFromUser(newRoot.owner);
   }
 
   /**
@@ -108,15 +104,12 @@ export class FilesystemService {
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
     newFolder.encryptedParentKey = dto.encryptedParentKey;
-    newFolder.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
-
-    newFolder.parent = await this.nodeRepo.findOne({
+    newFolder.owner = dto.user;
+    newFolder.parent = await this.findOne({
       where: {
         id: dto.parentId,
         type: NodeType.FOLDER,
-        treeOwner: newFolder.treeOwner,
+        owner: newFolder.owner,
       },
     });
 
@@ -124,24 +117,26 @@ export class FilesystemService {
     await this.nodeRepo.save(newFolder);
 
     // returns owner's trees
-    return await this.getFileSystemFromUser(newFolder.treeOwner);
+    return await this.getFileSystemFromUser(newFolder.owner);
   }
 
   /**
-   * Throws an error if the file object in argument is not (undefined, empty, not uploaded...).
+   * Throws an error if the file object in argument is invalid (undefined, empty, not uploaded...).
    * This file will be deleted if he's still in the temporary folder after 30 seconds.
    * Returns the name of the file.
    */
   uploadFile(file: Express.Multer.File): string {
-    if (file === undefined) {
+    // error on invalid file
+    if (!file) {
       throw Communication.err(
         Status.ERROR_INVALID_FILE,
         'Non existing or invalid file has been tried to be sent.',
       );
     }
+
     // file will be deleted in 30 seconds
     setTimeout(() => {
-      UploadFoldersManager.deleteTmpFile(file.filename);
+      UploadsManager.deleteTmpFile(file.filename);
     }, 30000);
 
     return file.filename;
@@ -160,25 +155,23 @@ export class FilesystemService {
     newFile.type = NodeType.FILE;
     newFile.ref = dto.ref;
     newFile.encryptedParentKey = dto.encryptedParentKey;
-    newFile.treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
+    newFile.owner = dto.user;
     newFile.parent = await this.findOne({
       where: {
         id: dto.parentId,
-        treeOwner: newFile.treeOwner,
+        owner: newFile.owner,
         type: NodeType.FOLDER,
       },
     });
 
     // moving file from temporary folder
-    UploadFoldersManager.moveFileFromTmpToPermanent(dto.ref);
+    UploadsManager.moveFileFromTmpToPermanent(dto.ref);
 
     // database upload
     await this.nodeRepo.save(newFile);
 
     // returns owner's trees
-    return await this.getFileSystemFromUser(newFile.treeOwner);
+    return await this.getFileSystemFromUser(newFile.owner);
   }
 
   /**
@@ -187,28 +180,20 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateRef(dto: UpdateRefDto) {
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
         type: NodeType.FILE,
       },
     });
 
-    // moving file from temporary folder
-    UploadFoldersManager.moveFileFromTmpToPermanent(dto.newRef);
-
-    // deleting old file
-    node.deleteStoredFile();
-
-    // updating file reference
-    node.ref = dto.newRef;
+    UploadsManager.moveFileFromTmpToPermanent(dto.newRef); // moving file from temporary folder
+    UploadsManager.deletePermanentFile(node); // deleting old file
+    node.ref = dto.newRef; // updating file reference
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -216,13 +201,10 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateMetadata(dto: UpdateMetadataDto) {
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
 
@@ -230,7 +212,7 @@ export class FilesystemService {
     node.encryptedMetadata = dto.newEncryptedMetadata;
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -238,14 +220,10 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateParent(dto: UpdateParentDto) {
-    // finding the node to move
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
 
@@ -253,13 +231,13 @@ export class FilesystemService {
     node.parent = await this.findOne({
       where: {
         id: dto.newParentId,
-        treeOwner: treeOwner,
+        owner: dto.user,
         type: NodeType.FOLDER,
       },
     });
 
     await this.nodeRepo.save(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
   }
 
   /**
@@ -267,14 +245,10 @@ export class FilesystemService {
    * Returns the deleted target node.
    */
   async delete(dto: GetNodeDto): Promise<Node[]> {
-    // finding the node to delete
-    const treeOwner = await this.userService.findOne({
-      where: { id: dto.treeOwnerId },
-    });
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        treeOwner: treeOwner,
+        owner: dto.user,
       },
     });
     const descendants = await this.nodeRepo.findDescendants(node);
@@ -282,12 +256,25 @@ export class FilesystemService {
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const descendant of descendants) {
-      descendant.deleteStoredFile();
+      UploadsManager.deletePermanentFile(descendant);
     }
 
     // removes the target node form database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
-    return await this.getFileSystemFromUser(treeOwner);
+    return await this.getFileSystemFromUser(dto.user);
+  }
+
+  /**
+   * Find the Node entity of the file in the database
+   * Return the path of the file or an error if not found
+   */
+  async getFile(nodeId: number): Promise<StreamableFile> {
+    const node = await this.findOne({
+      where: { id: nodeId, type: NodeType.FILE },
+    });
+    const path = join(process.cwd(), UploadsManager.uploadFolder, node.ref);
+    const file = createReadStream(path);
+    return new StreamableFile(file);
   }
 }

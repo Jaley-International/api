@@ -8,8 +8,6 @@ import {
   TreeParent,
 } from 'typeorm';
 import { User } from '../user/user.entity';
-import { existsSync, unlinkSync } from 'fs';
-import { UploadFoldersManager } from '../utils/uploadFoldersManager';
 
 export enum NodeType {
   FILE = 'FILE',
@@ -38,24 +36,11 @@ export class Node {
   encryptedParentKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
-  treeOwner: User;
+  owner: User;
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;
 
   @TreeChildren()
   children: Node[];
-
-  /**
-   * Removes the node's corresponding file on disk
-   * if the node represents a file.
-   */
-  deleteStoredFile() {
-    if (this.type === NodeType.FILE) {
-      const filePath = UploadFoldersManager.uploadFolder + this.ref;
-      if (existsSync(filePath)) {
-        unlinkSync(filePath);
-      }
-    }
-  }
 }

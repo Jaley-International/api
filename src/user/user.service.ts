@@ -18,6 +18,7 @@ import {
   sha512,
 } from 'src/utils/security';
 import { Communication, Status } from '../utils/communication';
+import { UploadsManager } from '../utils/uploadsManager';
 
 @Injectable()
 export class UserService {
@@ -41,7 +42,7 @@ export class UserService {
    */
   async findOne(options: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepo.findOne(options);
-    if (user === undefined) {
+    if (!user) {
       throw Communication.err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
@@ -52,8 +53,8 @@ export class UserService {
    * Throws an exception if the email or username is already used.
    */
   async create(dto: CreateUserDto): Promise<User> {
-    if (!(await this.mailExists(dto.email))) {
-      if (!(await this.userExists(dto.username))) {
+    if (!(await this.userExists(dto.username))) {
+      if (!(await this.mailExists(dto.email))) {
         const newUser = new User();
         newUser.username = dto.username;
         newUser.clientRandomValue = dto.clientRandomValue;
@@ -66,14 +67,14 @@ export class UserService {
         return await this.userRepo.save(newUser);
       } else {
         throw Communication.err(
-          Status.ERROR_USERNAME_ALREADY_USED,
-          'Username already in use.',
+          Status.ERROR_EMAIL_ALREADY_USED,
+          'Email already in use.',
         );
       }
     } else {
       throw Communication.err(
-        Status.ERROR_EMAIL_ALREADY_USED,
-        'Email already in use.',
+        Status.ERROR_USERNAME_ALREADY_USED,
+        'Username already in use.',
       );
     }
   }
@@ -83,10 +84,9 @@ export class UserService {
    * Returns the updated user.
    */
   async update(dto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne({ where: { id: dto.userId } });
-    user.email = dto.email;
-    await this.userRepo.save(user);
-    return user;
+    dto.user.email = dto.email;
+    await this.userRepo.save(dto.user);
+    return dto.user;
   }
 
   /**
@@ -97,14 +97,14 @@ export class UserService {
   async delete(dto: DeleteUserDto): Promise<User> {
     // loads the target user with its nodes
     const user = await this.findOne({
-      where: { id: dto.userId },
+      where: { id: dto.user.id },
       relations: ['nodes'],
     });
 
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const node of user.nodes) {
-      node.deleteStoredFile();
+      UploadsManager.deletePermanentFile(node);
     }
 
     // removes from database the target user and all its nodes
@@ -118,7 +118,7 @@ export class UserService {
    */
   async getSalt(username: string): Promise<string> {
     const user = await this.userRepo.findOne({ where: { username: username } });
-    if (user !== undefined) {
+    if (user) {
       return sha256(
         addPadding(username + INSTANCE_ID + user.clientRandomValue, 128),
       );
@@ -130,15 +130,15 @@ export class UserService {
   }
 
   /**
-   * Authenticates an existing user.
+   * Logs in an existing user.
    * Creates a new session entity with an expiration date.
    * Returns the encryption keys of the user.
    * Throws an exception if user's credential are not valid.
    */
-  async authentication(dto: AuthenticationDto): Promise<object> {
+  async login(dto: AuthenticationDto): Promise<object> {
     const user = await this.userRepo.findOne({ username: dto.username });
 
-    if (user !== undefined) {
+    if (user) {
       const key = sha512(dto.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {
@@ -147,7 +147,8 @@ export class UserService {
         session.id = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
-          Date.now() + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME);
+          Date.now() +
+          parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
 
