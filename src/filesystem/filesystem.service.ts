@@ -103,8 +103,7 @@ export class FilesystemService {
     newFolder.ref = '';
     newFolder.encryptedParentKey = dto.encryptedParentKey;
     newFolder.owner = dto.user;
-
-    newFolder.parent = await this.nodeRepo.findOne({
+    newFolder.parent = await this.findOne({
       where: {
         id: dto.parentId,
         type: NodeType.FOLDER,
