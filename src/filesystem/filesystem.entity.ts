@@ -8,8 +8,6 @@ import {
   TreeParent,
 } from 'typeorm';
 import { User } from '../user/user.entity';
-import { existsSync, unlinkSync } from 'fs';
-import { UploadsManager } from '../utils/uploadsManager';
 
 export enum NodeType {
   FILE = 'FILE',
@@ -45,17 +43,4 @@ export class Node {
 
   @TreeChildren()
   children: Node[];
-
-  /**
-   * Removes the node's corresponding file on disk
-   * if the node represents a file.
-   */
-  deleteStoredFile() {
-    if (this.type === NodeType.FILE) {
-      const filePath = UploadsManager.uploadFolder + this.ref;
-      if (existsSync(filePath)) {
-        unlinkSync(filePath);
-      }
-    }
-  }
 }

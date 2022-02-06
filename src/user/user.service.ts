@@ -18,6 +18,7 @@ import {
   sha512,
 } from 'src/utils/security';
 import { Communication, Status } from '../utils/communication';
+import { UploadsManager } from '../utils/uploadsManager';
 
 @Injectable()
 export class UserService {
@@ -83,10 +84,9 @@ export class UserService {
    * Returns the updated user.
    */
   async update(dto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne({ where: { id: dto.userId } });
-    user.email = dto.email;
-    await this.userRepo.save(user);
-    return user;
+    dto.user.email = dto.email;
+    await this.userRepo.save(dto.user);
+    return dto.user;
   }
 
   /**
@@ -104,7 +104,7 @@ export class UserService {
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const node of user.nodes) {
-      node.deleteStoredFile();
+      UploadsManager.deletePermanentFile(node);
     }
 
     // removes from database the target user and all its nodes

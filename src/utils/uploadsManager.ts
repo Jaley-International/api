@@ -50,4 +50,17 @@ export class UploadsManager {
       files: filename,
     });
   }
+
+  /**
+   * Removes a node's corresponding file on disk
+   * if the node represents a file.
+   */
+  static deletePermanentFile(node: Node) {
+    if (node.type === NodeType.FILE) {
+      const filePath = UploadsManager.uploadFolder + node.ref;
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
+    }
+  }
 }

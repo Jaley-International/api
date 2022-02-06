@@ -22,15 +22,25 @@ export async function sessionValidator(
   const bearerToken = authHeader.split(' ');
   const token = bearerToken[bearerToken.length - 1];
 
-  // checking if the session exist and is not expired
+  // getting current session
   const session = await sessionRepo.findOne({
     where: { id: token, expire: MoreThan(Date.now()) },
     relations: ['user'],
   });
+
+  // checking if the session exist and is not expired
   if (!session) {
     throw Communication.err(
       Status.ERROR_INVALID_SESSION,
       'Invalid or expired session.',
+    );
+  }
+
+  // checking if the session corresponds to an existing user
+  if (!session.user) {
+    throw Communication.err(
+      Status.ERROR_USER_NOT_FOUND,
+      'No user corresponding to the current session has been found.',
     );
   }
 

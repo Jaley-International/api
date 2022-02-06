@@ -187,14 +187,9 @@ export class FilesystemService {
       },
     });
 
-    // moving file from temporary folder
-    UploadsManager.moveFileFromTmpToPermanent(dto.newRef);
-
-    // deleting old file
-    node.deleteStoredFile();
-
-    // updating file reference
-    node.ref = dto.newRef;
+    UploadsManager.moveFileFromTmpToPermanent(dto.newRef); // moving file from temporary folder
+    UploadsManager.deletePermanentFile(node); // deleting old file
+    node.ref = dto.newRef; // updating file reference
 
     await this.nodeRepo.save(node);
     return await this.getFileSystemFromUser(dto.user);
@@ -262,7 +257,7 @@ export class FilesystemService {
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const descendant of descendants) {
-      descendant.deleteStoredFile();
+      UploadsManager.deletePermanentFile(descendant);
     }
 
     // removes the target node form database with all its descendants
