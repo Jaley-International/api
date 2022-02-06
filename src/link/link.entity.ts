@@ -12,6 +12,9 @@ export class Link {
   @Column()
   encryptedShareKey: string;
 
+  @Column()
+  iv: string;
+
   @ManyToOne(() => Node, (node) => node.links, { onDelete: 'CASCADE' })
   node: Node;
 }

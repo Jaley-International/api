@@ -20,6 +20,7 @@ export class LinkService {
     link.id = forge.util.bytesToHex(forge.random.getBytesSync(8));
     link.encryptedNodeKey = dto.encryptedNodeKey;
     link.encryptedShareKey = dto.encryptedShareKey;
+    link.iv = dto.iv;
     link.node = await this.fileService.findOne({
       where: { id: dto.nodeId, type: NodeType.FILE },
     });
