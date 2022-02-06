@@ -21,6 +21,12 @@ export class Node {
   id: number;
 
   @Column()
+  iv: string;
+
+  @Column()
+  tag: string;
+
+  @Column()
   encryptedKey: string;
 
   @Column()

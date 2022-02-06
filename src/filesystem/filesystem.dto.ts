@@ -17,6 +17,17 @@ export class CreateRootDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
+  @Matches(/^[0-9a-f]+$/)
+  iv: string;
+
+  @ApiProperty()
+  @IsString()
+  @Matches(/^[0-9a-f]*$/)
+  tag: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
   @Matches(/^[0-9a-zA-Z]+$/)
   encryptedKey: string;
 

@@ -6,13 +6,14 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
+  Post, Res,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
-import { Express } from 'express';
+import { Express, Response } from 'express';
 import {
   CreateFileDto,
   CreateFolderDto,
@@ -180,13 +181,16 @@ export class FilesystemController {
   /**
    * Gets the corresponding file of a node found by id.
    */
-  @Get('content:nodeid')
+  @Get('content/:nodeid')
   async downloadFile(
     @Param('nodeid', ParseIntPipe) nodeId: number,
-  ): Promise<object> {
-    const data = await this.fileService.getFile(nodeId);
-    return Communication.res(Status.SUCCESS, 'Successfully downloaded file', {
-      file: data,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    res.set({
+      'Content-Encoding': 'identity',
     });
+    // returns directly the encrypted file,
+    // not encapsulated in a response body like the other routes
+    return await this.fileService.getFile(nodeId);
   }
 }

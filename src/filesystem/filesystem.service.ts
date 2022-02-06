@@ -77,6 +77,8 @@ export class FilesystemService {
   async createRoot(dto: CreateRootDto): Promise<Node[]> {
     // creating new folder node
     const newRoot = new Node();
+    newRoot.iv = dto.iv;
+    newRoot.tag = dto.tag;
     newRoot.encryptedKey = dto.encryptedKey;
     newRoot.encryptedMetadata = dto.encryptedMetadata;
     newRoot.type = NodeType.FOLDER;
@@ -99,6 +101,8 @@ export class FilesystemService {
   async createFolder(dto: CreateFolderDto): Promise<Node[]> {
     // creating new folder node
     const newFolder = new Node();
+    newFolder.iv = dto.iv;
+    newFolder.tag = dto.tag;
     newFolder.encryptedKey = dto.encryptedKey;
     newFolder.encryptedMetadata = dto.encryptedMetadata;
     newFolder.type = NodeType.FOLDER;
@@ -150,6 +154,8 @@ export class FilesystemService {
   async createFile(dto: CreateFileDto): Promise<Node[]> {
     // creating new file node
     const newFile = new Node();
+    newFile.iv = dto.iv;
+    newFile.tag = dto.tag;
     newFile.encryptedKey = dto.encryptedKey;
     newFile.encryptedMetadata = dto.encryptedMetadata;
     newFile.type = NodeType.FILE;
