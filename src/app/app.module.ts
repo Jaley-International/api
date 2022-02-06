@@ -11,6 +11,8 @@ import { FilesystemModule } from '../filesystem/filesystem.module';
 import { sessionValidator } from './app.middleware';
 import { FilesystemController } from '../filesystem/filesystem.controller';
 import { UserController } from '../user/user.controller';
+import { LinkModule } from '../link/link.module';
+import { LinkController } from '../link/link.controller';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { UserController } from '../user/user.controller';
     }),
     UserModule,
     FilesystemModule,
+    LinkModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -37,6 +40,6 @@ export class AppModule implements NestModule {
         { path: 'api/users/salt/(.*)', method: RequestMethod.GET },
         { path: 'api/filesystem', method: RequestMethod.GET },
       )
-      .forRoutes(UserController, FilesystemController);
+      .forRoutes(UserController, FilesystemController, LinkController);
   }
 }

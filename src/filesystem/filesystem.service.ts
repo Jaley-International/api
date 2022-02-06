@@ -48,7 +48,7 @@ export class FilesystemService implements OnModuleInit {
   }
 
   /**
-   * Returns all the file system trees of all users.
+   * Returns all the file system tree.
    */
   private async findAll(): Promise<Node> {
     const data = await this.nodeRepo.findTrees();

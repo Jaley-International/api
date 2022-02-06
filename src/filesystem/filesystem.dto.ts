@@ -8,7 +8,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../user/user.entity';
 
-export class CreateRootDto {
+export class CreateFolderDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
@@ -34,9 +34,7 @@ export class CreateRootDto {
   @ApiProperty()
   @IsDefined()
   user: User;
-}
 
-export class CreateFolderDto extends CreateRootDto {
   @ApiProperty()
   @IsDefined()
   @IsString()

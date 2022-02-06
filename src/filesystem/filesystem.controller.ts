@@ -39,7 +39,7 @@ export class FilesystemController {
     const data = await this.fileService.getFileSystem();
     return Communication.res(
       Status.SUCCESS,
-      'Successfully got all file systems.',
+      'Successfully got all file system.',
       data,
     );
   }
