@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
@@ -15,6 +15,8 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
+import { createReadStream } from 'graceful-fs';
+import { join } from 'path';
 
 @Injectable()
 export class FilesystemService {
@@ -218,7 +220,6 @@ export class FilesystemService {
    * Returns the updated user's trees.
    */
   async updateParent(dto: UpdateParentDto) {
-    // finding the node to move
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
@@ -244,7 +245,6 @@ export class FilesystemService {
    * Returns the deleted target node.
    */
   async delete(dto: GetNodeDto): Promise<Node[]> {
-    // finding the node to delete
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
@@ -269,18 +269,12 @@ export class FilesystemService {
    * Find the Node entity of the file in the database
    * Return the path of the file or an error if not found
    */
-  async findFile(idNumber: number): Promise<string> {
-    //find  the file with exact NodeId
-    const file = await this.nodeRepo.findOne({
-      where: { id: idNumber },
+  async getFile(nodeId: number): Promise<StreamableFile> {
+    const node = await this.findOne({
+      where: { id: nodeId, type: NodeType.FILE },
     });
-    //if found return the path
-    if (file) {
-      return UploadsManager.uploadFolder + file.ref;
-    }
-    //return 404 not found if not found
-    else {
-      throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'file not found');
-    }
+    const path = join(process.cwd(), UploadsManager.uploadFolder, node.ref);
+    const file = createReadStream(path);
+    return new StreamableFile(file);
   }
 }

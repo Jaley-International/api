@@ -7,7 +7,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -18,16 +17,12 @@ import {
   CreateFileDto,
   CreateFolderDto,
   CreateRootDto,
-  DownloadFileDto,
   GetNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
-import { ApiCreatedResponse, ApiNotFoundResponse } from '@nestjs/swagger';
-import { createReadStream } from 'graceful-fs';
-import { join } from 'path';
 import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
 
@@ -183,15 +178,15 @@ export class FilesystemController {
   }
 
   /**
-   * Download a file based on the id of the file
-   * Returns to client the file.
+   * Gets the corresponding file of a node found by id.
    */
-  @Post('downloadFile')
-  @ApiCreatedResponse({ description: 'file created' })
-  @ApiNotFoundResponse()
-  async downloadFile(@Body() dto: DownloadFileDto): Promise<any> {
-    const file = await this.fileService.findFile(dto.NodeId);
-    const stream = createReadStream(join(process.cwd(), file));
-    return new StreamableFile(stream);
+  @Get('content:nodeid')
+  async downloadFile(
+    @Param('nodeid', ParseIntPipe) nodeId: number,
+  ): Promise<object> {
+    const data = await this.fileService.getFile(nodeId);
+    return Communication.res(Status.SUCCESS, 'Successfully downloaded file', {
+      file: data,
+    });
   }
 }

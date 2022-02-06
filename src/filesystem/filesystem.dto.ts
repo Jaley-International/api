@@ -78,10 +78,3 @@ export class UpdateRefDto extends GetNodeDto {
   @IsNotEmpty()
   newRef: string;
 }
-
-export class DownloadFileDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsInt()
-  NodeId: number;
-}
