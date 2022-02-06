@@ -118,7 +118,7 @@ export class UserService {
    */
   async getSalt(username: string): Promise<string> {
     const user = await this.userRepo.findOne({ where: { username: username } });
-    if (!user) {
+    if (user) {
       return sha256(
         addPadding(username + INSTANCE_ID + user.clientRandomValue, 128),
       );
