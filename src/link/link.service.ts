@@ -26,4 +26,13 @@ export class LinkService {
     await this.linkRepo.save(link);
     return link.id;
   }
+
+  //TODO move to file system module
+  async getLinkByNode(nodeId: number): Promise<Link[]> {
+    const node = await this.fileService.findOne({
+      where: { id: nodeId },
+      relations: ['links'],
+    });
+    return node.links;
+  }
 }
