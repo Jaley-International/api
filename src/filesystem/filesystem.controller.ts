@@ -6,7 +6,8 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post, Res,
+  Post,
+  Res,
   StreamableFile,
   UploadedFile,
   UseInterceptors,
@@ -17,7 +18,6 @@ import { Express, Response } from 'express';
 import {
   CreateFileDto,
   CreateFolderDto,
-  CreateRootDto,
   GetNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
@@ -27,16 +27,16 @@ import { diskStorage } from 'multer';
 import { UploadsManager } from '../utils/uploadsManager';
 import { Communication, Status } from '../utils/communication';
 
-@Controller('filesystems')
+@Controller('filesystem')
 export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
   /**
-   * Gets all the current file system trees.
+   * Gets the current file system tree in its entirety.
    */
   @Get()
-  async getFileSystems(): Promise<object> {
-    const data = await this.fileService.findAll();
+  async getFileSystem(): Promise<object> {
+    const data = await this.fileService.getFileSystem();
     return Communication.res(
       Status.SUCCESS,
       'Successfully got all file systems.',
@@ -45,44 +45,16 @@ export class FilesystemController {
   }
 
   /**
-   * Gets the current file system tree of a user by its id.
+   * Gets the target node descendant tree.
    */
-  @Get(':userid')
-  async getUserFileSystem(
-    @Param('userid', ParseIntPipe) userId: number,
+  @Get(':nodeid')
+  async getFileSystemById(
+    @Param('nodeid', ParseIntPipe) nodeId: number,
   ): Promise<object> {
-    const data = await this.fileService.getFileSystemFromUserId(userId);
+    const data = await this.fileService.getFileSystem(nodeId);
     return Communication.res(
       Status.SUCCESS,
-      "Successfully user's file system",
-      data,
-    );
-  }
-
-  /**
-   * Adds a new root to the file system of the specified user.
-   * Returns to client its updated file system tree.
-   */
-  @Post('root')
-  async createRoot(@Body() dto: CreateRootDto): Promise<object> {
-    const data = await this.fileService.createRoot(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully added new root to user.',
-      data,
-    );
-  }
-
-  /**
-   * Inserts a new folder in a user workspace file system.
-   * Returns to client its updated file system tree.
-   */
-  @Post('folder')
-  async createFolder(@Body() dto: CreateFolderDto): Promise<object> {
-    const data = await this.fileService.createFolder(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully created new folder.',
+      "Successfully got node's tree",
       data,
     );
   }
@@ -108,87 +80,93 @@ export class FilesystemController {
    * Uploads a file object into the database architectures.
    * This requires to have previously uploaded a file
    * in order to move it from temporary folder to permanent folder.
-   * Returns to client its updated file system tree.
    */
   @Post('file')
   async createFile(@Body() dto: CreateFileDto): Promise<object> {
-    const data = await this.fileService.createFile(dto);
+    await this.fileService.createFile(dto);
     return Communication.res(
       Status.SUCCESS,
       'Successfully created new file.',
-      data,
+      {},
     );
   }
 
   /**
-   * Updates the in-database reference to a file.
+   * Inserts a new folder in the file system.
+   */
+  @Post('folder')
+  async createFolder(@Body() dto: CreateFolderDto): Promise<object> {
+    await this.fileService.createFolder(dto);
+    return Communication.res(
+      Status.SUCCESS,
+      'Successfully created new folder.',
+      {},
+    );
+  }
+
+  /**
+   * Updates a node's reference.
    * This requires to have previously uploaded a file
    * in order to move it from temporary folder to permanent folder.
-   * Returns to client its updated file system tree.
    */
   @Patch('ref')
   async updateRef(@Body() dto: UpdateRefDto): Promise<object> {
-    const data = await this.fileService.updateRef(dto);
+    await this.fileService.updateRef(dto);
     return Communication.res(
       Status.SUCCESS,
       'Successfully overwritten file.',
-      data,
+      {},
     );
   }
 
   /**
    * Updates a node's metadata.
-   * Returns to client its updated file system tree.
    */
   @Patch('metadata')
   async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<object> {
-    const data = await this.fileService.updateMetadata(dto);
+    await this.fileService.updateMetadata(dto);
     return Communication.res(
       Status.SUCCESS,
       'Successfully updated file metadata.',
-      data,
+      {},
     );
   }
 
   /**
-   * Moves a node inside its tree.
-   * Returns to client its updated file system tree.
+   * Moves a node inside the filesystem tree.
    */
   @Patch('parent')
   async updateParent(@Body() dto: UpdateParentDto): Promise<object> {
-    const data = await this.fileService.updateParent(dto);
+    await this.fileService.updateParent(dto);
     return Communication.res(
       Status.SUCCESS,
       'Successfully moved file to another parent.',
-      data,
+      {},
     );
   }
 
   /**
-   * Deletes a node by id and all of its descendant.
-   * Returns to client its updated file system tree.
+   * Deletes a node and all of its descendants.
    */
   @Delete()
   async delete(@Body() dto: GetNodeDto): Promise<object> {
-    const data = await this.fileService.delete(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully deleted file.',
-      data,
-    );
+    await this.fileService.delete(dto);
+    return Communication.res(Status.SUCCESS, 'Successfully deleted file.', {});
   }
 
   /**
-   * Gets the corresponding file of a node found by id.
+   * Gets the corresponding file content of a node found by id.
    */
   @Get('content/:nodeid')
   async downloadFile(
     @Param('nodeid', ParseIntPipe) nodeId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    // setting encoding method to ensure loyal data retransmission
     res.set({
       'Content-Encoding': 'identity',
     });
+
     // returns directly the encrypted file,
     // not encapsulated in a response body like the other routes
     return await this.fileService.getFile(nodeId);
