@@ -14,7 +14,7 @@ import {
   UpdateUserDto,
 } from './user.dto';
 import { UserService } from './user.service';
-import { Communication, Status } from '../utils/communication';
+import { Communication, ComRes, Status } from '../utils/communication';
 
 @Controller('users')
 export class UserController {
@@ -24,7 +24,7 @@ export class UserController {
    * Gets all existing users.
    */
   @Get()
-  async findAll(): Promise<object> {
+  async findAll(): Promise<ComRes> {
     const data = await this.userService.findAll();
     return Communication.res(
       Status.SUCCESS,
@@ -38,7 +38,7 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post()
-  async create(@Body() dto: CreateUserDto): Promise<object> {
+  async create(@Body() dto: CreateUserDto): Promise<ComRes> {
     const data = await this.userService.create(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -52,7 +52,7 @@ export class UserController {
    * Returns to client the updated user.
    */
   @Patch()
-  async update(@Body() dto: UpdateUserDto): Promise<object> {
+  async update(@Body() dto: UpdateUserDto): Promise<ComRes> {
     const data = await this.userService.update(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -66,7 +66,7 @@ export class UserController {
    * Returns to client the deleted user.
    */
   @Delete()
-  async delete(@Body() dto: DeleteUserDto): Promise<object> {
+  async delete(@Body() dto: DeleteUserDto): Promise<ComRes> {
     const data = await this.userService.delete(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -76,7 +76,7 @@ export class UserController {
   }
 
   @Get('salt/:username')
-  async getSalt(@Param('username') username: string): Promise<object> {
+  async getSalt(@Param('username') username: string): Promise<ComRes> {
     const data = await this.userService.getSalt(username);
     return Communication.res(Status.SUCCESS, 'Successfully got salt.', {
       salt: data,
@@ -84,7 +84,7 @@ export class UserController {
   }
 
   @Post('login')
-  async login(@Body() dto: AuthenticationDto): Promise<object> {
+  async login(@Body() dto: AuthenticationDto): Promise<ComRes> {
     const data = await this.userService.login(dto);
     return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
   }

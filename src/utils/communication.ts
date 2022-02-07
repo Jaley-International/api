@@ -10,6 +10,13 @@ export enum Status {
   ERROR_INVALID_CREDENTIALS = 'ERROR_INVALID_CREDENTIALS',
   ERROR_INVALID_SESSION = 'ERROR_INVALID_SESSION',
   ERROR_NO_AUTH_TOKEN = 'ERROR_NO_AUTH_TOKEN',
+  ERROR_LINK_NOT_FOUND = 'ERROR_LINK_NOT_FOUND',
+}
+
+export interface ComRes {
+  status: Status;
+  verbose: string;
+  data: object;
 }
 
 export class Communication {
@@ -17,7 +24,7 @@ export class Communication {
    * Returns an object representing a response body.
    * This is meant to be returned in a controller as a response.
    */
-  static res(status: Status, verbose: string, data: object): object {
+  static res(status: Status, verbose: string, data: object): ComRes {
     return { status: status, verbose: verbose, data: data };
   }
 
