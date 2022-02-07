@@ -151,7 +151,7 @@ export class FilesystemController {
   @Delete()
   async delete(@Body() dto: GetNodeDto): Promise<object> {
     await this.fileService.delete(dto);
-    return Communication.res(Status.SUCCESS, 'Successfully deleted file.', {});
+    return Communication.res(Status.SUCCESS, 'Successfully deleted node.', {});
   }
 
   /**

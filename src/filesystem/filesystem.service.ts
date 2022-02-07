@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, TreeRepository } from 'typeorm';
+import { FindOneOptions, Not, TreeRepository } from 'typeorm';
 import {
   CreateFileDto,
   CreateFolderDto,
@@ -163,7 +163,6 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        owner: dto.user,
         type: NodeType.FILE,
       },
     });
@@ -182,7 +181,6 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        owner: dto.user,
       },
     });
     node.encryptedMetadata = dto.newEncryptedMetadata;
@@ -196,7 +194,6 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        owner: dto.user,
       },
     });
 
@@ -204,7 +201,6 @@ export class FilesystemService implements OnModuleInit {
     node.parent = await this.findOne({
       where: {
         id: dto.newParentId,
-        owner: dto.user,
         type: NodeType.FOLDER,
       },
     });
