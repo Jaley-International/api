@@ -35,10 +35,12 @@ export class LinkController {
     );
   }
 
-  @Get('node/:linkId')
-  async getNodeByLink(@Param('linkId') linkId: string) {
+  @Get('node/:linkid')
+  async getNodeByLink(@Param('linkid') linkId: string) {
     const node = await this.linkService.getNodeByLink(linkId);
+    const link = await this.linkService.findOne({ where: { id: linkId } });
     return Communication.res(Status.SUCCESS, "Successfully got node's link", {
+      link: link,
       node: node,
     });
   }
