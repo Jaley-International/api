@@ -63,7 +63,7 @@ export class FilesystemService implements OnModuleInit {
 
   /**
    * Basic findOne function on Node repository,
-   * but throws an error when no node is found.
+   * but throws an exception when no node is found.
    */
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);

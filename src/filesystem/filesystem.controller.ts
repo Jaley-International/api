@@ -32,7 +32,7 @@ export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
   /**
-   * Gets the current file system tree in its entirety.
+   * Returns to client the current file system tree in its entirety.
    */
   @Get()
   async getFileSystem(): Promise<ComRes> {
@@ -45,7 +45,7 @@ export class FilesystemController {
   }
 
   /**
-   * Gets the target node descendant tree.
+   * Returns to client the target node's descendant tree.
    */
   @Get(':nodeid')
   async getFileSystemById(
@@ -60,7 +60,7 @@ export class FilesystemController {
   }
 
   /**
-   * Uploads the posted file in server disk storage into a temporary folder.
+   * Uploads the posted file in server disk storage into the temporary folder.
    * Returns to client the random generated file name.
    */
   @Post('content')
@@ -70,9 +70,9 @@ export class FilesystemController {
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {
-    const data = this.fileService.uploadFile(file);
+    const ref = this.fileService.uploadFile(file);
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
-      ref: data,
+      ref: ref,
     });
   }
 
