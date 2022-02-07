@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Res,
 } from '@nestjs/common';
 import {
   AuthenticationDto,
@@ -15,6 +16,7 @@ import {
 } from './user.dto';
 import { UserService } from './user.service';
 import { Communication, ComRes, Status } from '../utils/communication';
+import { Response } from 'express';
 
 @Controller('users')
 export class UserController {
@@ -76,16 +78,31 @@ export class UserController {
   }
 
   @Get('salt/:username')
-  async getSalt(@Param('username') username: string): Promise<ComRes> {
+  async getSalt(
+    @Param('username') username: string,
+    @Res() res: Response,
+  ): Promise<Response> {
     const data = await this.userService.getSalt(username);
-    return Communication.res(Status.SUCCESS, 'Successfully got salt.', {
-      salt: data,
-    });
+
+    return res.set({ 'Access-Control-Allow-Origin': '*' }).json(
+      Communication.res(Status.SUCCESS, 'Successfully got salt.', {
+        salt: data,
+      }),
+    );
+
+    //return Communication.res(Status.SUCCESS, 'Successfully got salt.', { salt: data, });
   }
 
   @Post('login')
-  async login(@Body() dto: AuthenticationDto): Promise<ComRes> {
+  async login(
+    @Body() dto: AuthenticationDto,
+    @Res() res: Response,
+  ): Promise<Response> {
     const data = await this.userService.login(dto);
-    return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
+
+    return res
+      .set({ 'Access-Control-Allow-Origin': '*' })
+      .json(Communication.res(Status.SUCCESS, 'Successfully logged in.', data));
+    //return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
   }
 }
