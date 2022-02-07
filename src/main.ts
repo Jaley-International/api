@@ -7,6 +7,7 @@ import { UploadsManager } from './utils/uploadsManager';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
+  app.enableCors();
   const config = new DocumentBuilder()
     .setTitle('PEC API')
     .setDescription('The Private Encrypted Cloud API description')
