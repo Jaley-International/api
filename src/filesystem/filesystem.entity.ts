@@ -2,12 +2,14 @@ import {
   Column,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Tree,
   TreeChildren,
   TreeParent,
 } from 'typeorm';
 import { User } from '../user/user.entity';
+import { Link } from '../link/link.entity';
 
 export enum NodeType {
   FILE = 'FILE',
@@ -43,6 +45,9 @@ export class Node {
 
   @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
   owner: User;
+
+  @OneToMany(() => Link, (link) => link.node)
+  links: Link[];
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;
