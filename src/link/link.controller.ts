@@ -36,7 +36,7 @@ export class LinkController {
   }
 
   @Get('node/:linkId')
-  async getNodeByLink(@Param('linkId', ParseIntPipe) linkId: number) {
+  async getNodeByLink(@Param('linkId') linkId: string) {
     const node = await this.linkService.getNodeByLink(linkId);
     return Communication.res(Status.SUCCESS, "Successfully got node's link", {
       node: node,

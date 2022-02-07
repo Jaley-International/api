@@ -61,7 +61,7 @@ export class LinkService {
   /**
    * Returns the node in relation with a targeted link.
    */
-  async getNodeByLink(linkId: number): Promise<Node> {
+  async getNodeByLink(linkId: string): Promise<Node> {
     const link = await this.findOne({
       where: { shareId: linkId },
       relations: ['node'],
