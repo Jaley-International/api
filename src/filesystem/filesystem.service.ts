@@ -181,6 +181,7 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
+        parent: Not(null),
       },
     });
     node.encryptedMetadata = dto.newEncryptedMetadata;
@@ -194,6 +195,7 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
+        parent: Not(null),
       },
     });
 
@@ -215,7 +217,7 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: {
         id: dto.nodeId,
-        owner: dto.user,
+        parent: Not(null),
       },
     });
     const descendants = await this.nodeRepo.findDescendants(node);
