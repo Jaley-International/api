@@ -36,9 +36,9 @@ export class LinkController {
   }
 
   @Get('node/:linkid')
-  async getNodeByLink(@Param('linkid') linkId: string) {
+  async getNodeByLink(@Param('linkid') linkId: string): Promise<ComRes> {
     const node = await this.linkService.getNodeByLink(linkId);
-    const link = await this.linkService.findOne({ where: { id: linkId } });
+    const link = await this.linkService.findById(linkId);
     return Communication.res(Status.SUCCESS, "Successfully got node's link", {
       link: link,
       node: node,

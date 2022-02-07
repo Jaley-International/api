@@ -29,6 +29,13 @@ export class LinkService {
   }
 
   /**
+   * Returns the link corresponding to the id passed in argument.
+   */
+  async findById(linkId: string): Promise<Link> {
+    return await this.findOne({ where: { shareId: linkId } });
+  }
+
+  /**
    * Creates a new link in relation with an existing node;
    * Returns the created link's id (shareId).
    */
