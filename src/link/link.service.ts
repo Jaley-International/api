@@ -17,7 +17,7 @@ export class LinkService {
 
   async createLink(dto: CreateLinkDto): Promise<string> {
     const link = new Link();
-    link.id = forge.util.bytesToHex(forge.random.getBytesSync(8));
+    link.shareId = forge.util.bytesToHex(forge.random.getBytesSync(8));
     link.encryptedNodeKey = dto.encryptedNodeKey;
     link.encryptedShareKey = dto.encryptedShareKey;
     link.iv = dto.iv;
@@ -25,7 +25,7 @@ export class LinkService {
       where: { id: dto.nodeId, type: NodeType.FILE },
     });
     await this.linkRepo.save(link);
-    return link.id;
+    return link.shareId;
   }
 
   //TODO move to file system module

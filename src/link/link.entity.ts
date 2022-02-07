@@ -4,7 +4,7 @@ import { Node } from '../filesystem/filesystem.entity';
 @Entity()
 export class Link {
   @PrimaryColumn()
-  id: string;
+  shareId: string;
 
   @Column()
   encryptedNodeKey: string;
