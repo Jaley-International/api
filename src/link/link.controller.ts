@@ -6,7 +6,7 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import { Communication, Status } from '../utils/communication';
+import { Communication, ComRes, Status } from '../utils/communication';
 import { LinkService } from './link.service';
 import { CreateLinkDto } from './link.dto';
 
@@ -15,7 +15,7 @@ export class LinkController {
   constructor(private linkService: LinkService) {}
 
   @Post()
-  async createLink(@Body() dto: CreateLinkDto): Promise<object> {
+  async createLink(@Body() dto: CreateLinkDto): Promise<ComRes> {
     const shareId = await this.linkService.createLink(dto);
     return Communication.res(Status.SUCCESS, 'Successfully created new link.', {
       shareId: shareId,
@@ -23,7 +23,9 @@ export class LinkController {
   }
 
   @Get(':nodeid')
-  async getLinkByNode(@Param('nodeid', ParseIntPipe) nodeId: number) {
+  async getLinkByNode(
+    @Param('nodeid', ParseIntPipe) nodeId: number,
+  ): Promise<ComRes> {
     const links = await this.linkService.getLinkByNode(nodeId);
     return Communication.res(
       Status.SUCCESS,

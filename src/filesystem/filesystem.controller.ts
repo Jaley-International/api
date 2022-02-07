@@ -25,7 +25,7 @@ import {
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
 import { UploadsManager } from '../utils/uploadsManager';
-import { Communication, Status } from '../utils/communication';
+import { Communication, ComRes, Status } from '../utils/communication';
 
 @Controller('filesystem')
 export class FilesystemController {
@@ -35,7 +35,7 @@ export class FilesystemController {
    * Gets the current file system tree in its entirety.
    */
   @Get()
-  async getFileSystem(): Promise<object> {
+  async getFileSystem(): Promise<ComRes> {
     const data = await this.fileService.getFileSystem();
     return Communication.res(
       Status.SUCCESS,
@@ -50,7 +50,7 @@ export class FilesystemController {
   @Get(':nodeid')
   async getFileSystemById(
     @Param('nodeid', ParseIntPipe) nodeId: number,
-  ): Promise<object> {
+  ): Promise<ComRes> {
     const data = await this.fileService.getFileSystem(nodeId);
     return Communication.res(
       Status.SUCCESS,
@@ -69,7 +69,7 @@ export class FilesystemController {
       storage: diskStorage({ destination: UploadsManager.tmpFolder }),
     }),
   )
-  uploadFile(@UploadedFile() file: Express.Multer.File): object {
+  uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {
     const data = this.fileService.uploadFile(file);
     return Communication.res(Status.SUCCESS, 'Successfully uploaded file.', {
       ref: data,
@@ -82,7 +82,7 @@ export class FilesystemController {
    * in order to move it from temporary folder to permanent folder.
    */
   @Post('file')
-  async createFile(@Body() dto: CreateFileDto): Promise<object> {
+  async createFile(@Body() dto: CreateFileDto): Promise<ComRes> {
     await this.fileService.createFile(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -95,7 +95,7 @@ export class FilesystemController {
    * Inserts a new folder in the file system.
    */
   @Post('folder')
-  async createFolder(@Body() dto: CreateFolderDto): Promise<object> {
+  async createFolder(@Body() dto: CreateFolderDto): Promise<ComRes> {
     await this.fileService.createFolder(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -110,7 +110,7 @@ export class FilesystemController {
    * in order to move it from temporary folder to permanent folder.
    */
   @Patch('ref')
-  async updateRef(@Body() dto: UpdateRefDto): Promise<object> {
+  async updateRef(@Body() dto: UpdateRefDto): Promise<ComRes> {
     await this.fileService.updateRef(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -123,7 +123,7 @@ export class FilesystemController {
    * Updates a node's metadata.
    */
   @Patch('metadata')
-  async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<object> {
+  async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<ComRes> {
     await this.fileService.updateMetadata(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -136,7 +136,7 @@ export class FilesystemController {
    * Moves a node inside the filesystem tree.
    */
   @Patch('parent')
-  async updateParent(@Body() dto: UpdateParentDto): Promise<object> {
+  async updateParent(@Body() dto: UpdateParentDto): Promise<ComRes> {
     await this.fileService.updateParent(dto);
     return Communication.res(
       Status.SUCCESS,
@@ -149,7 +149,7 @@ export class FilesystemController {
    * Deletes a node and all of its descendants.
    */
   @Delete()
-  async delete(@Body() dto: GetNodeDto): Promise<object> {
+  async delete(@Body() dto: GetNodeDto): Promise<ComRes> {
     await this.fileService.delete(dto);
     return Communication.res(Status.SUCCESS, 'Successfully deleted node.', {});
   }
