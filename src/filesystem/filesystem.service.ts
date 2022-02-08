@@ -14,6 +14,7 @@ import { UploadsManager } from '../utils/uploadsManager';
 import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -236,7 +237,10 @@ export class FilesystemService implements OnModuleInit {
       where: { id: nodeId, type: NodeType.FILE },
     });
     const path = join(process.cwd(), UploadsManager.uploadFolder, node.ref);
-    const file = createReadStream(path);
-    return new StreamableFile(file);
+    if (existsSync(path)) {
+      const file = createReadStream(path);
+      return new StreamableFile(file);
+    }
+    throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
   }
 }
