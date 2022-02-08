@@ -6,7 +6,7 @@ import forge from 'node-forge';
 import { FilesystemService } from '../filesystem/filesystem.service';
 import { CreateLinkDto } from './link.dto';
 import { Node, NodeType } from '../filesystem/filesystem.entity';
-import { Communication, Status } from '../utils/communication';
+import { err, Status } from '../utils/communication';
 
 @Injectable()
 export class LinkService {
@@ -23,7 +23,7 @@ export class LinkService {
   async findOne(options: FindOneOptions<Link>): Promise<Link> {
     const link = await this.linkRepo.findOne(options);
     if (!link) {
-      throw Communication.err(Status.ERROR_LINK_NOT_FOUND, 'Link not found.');
+      throw err(Status.ERROR_LINK_NOT_FOUND, 'Link not found.');
     }
     return link;
   }

@@ -11,7 +11,7 @@ import {
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
 import { UploadsManager } from '../utils/uploadsManager';
-import { Communication, Status } from '../utils/communication';
+import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 
@@ -53,10 +53,7 @@ export class FilesystemService implements OnModuleInit {
   private async findAll(): Promise<Node> {
     const data = await this.nodeRepo.findTrees();
     if (!data) {
-      throw Communication.err(
-        Status.ERROR_NODE_NOT_FOUND,
-        'Empty file system.',
-      );
+      throw err(Status.ERROR_NODE_NOT_FOUND, 'Empty file system.');
     }
     return data[0];
   }
@@ -68,7 +65,7 @@ export class FilesystemService implements OnModuleInit {
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);
     if (!node) {
-      throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
+      throw err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
     }
     return node;
   }
@@ -95,7 +92,7 @@ export class FilesystemService implements OnModuleInit {
   uploadFile(file: Express.Multer.File): string {
     // error on invalid file
     if (!file) {
-      throw Communication.err(
+      throw err(
         Status.ERROR_INVALID_FILE,
         'Non existing or invalid file has been tried to be sent.',
       );

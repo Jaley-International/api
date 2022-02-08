@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, rename, unlinkSync } from 'fs';
 import findRemoveSync from 'find-remove';
-import { Communication, Status } from './communication';
+import { err, Status } from './communication';
 import { NodeType, Node } from '../filesystem/filesystem.entity';
 import { join } from 'path';
 
@@ -18,10 +18,7 @@ export class UploadsManager {
 
     // checking if desired file exist in tmp folder
     if (!existsSync(currentFilePath)) {
-      throw Communication.err(
-        Status.ERROR_INVALID_FILE,
-        'Expired or non existing file.',
-      );
+      throw err(Status.ERROR_INVALID_FILE, 'Expired or non existing file.');
     }
     // checks if upload directory exist, creates it if not
     // prevents error during file renaming below

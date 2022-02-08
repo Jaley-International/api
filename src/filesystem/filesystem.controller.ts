@@ -25,7 +25,7 @@ import {
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
 import { UploadsManager } from '../utils/uploadsManager';
-import { Communication, ComRes } from '../utils/communication';
+import { res, ComRes } from '../utils/communication';
 
 @Controller('filesystem')
 export class FilesystemController {
@@ -37,7 +37,7 @@ export class FilesystemController {
   @Get()
   async getFileSystem(): Promise<ComRes> {
     const data = await this.fileService.getFileSystem();
-    return Communication.res('Successfully got all file system.', data);
+    return res('Successfully got all file system.', data);
   }
 
   /**
@@ -48,7 +48,7 @@ export class FilesystemController {
     @Param('nodeid', ParseIntPipe) nodeId: number,
   ): Promise<ComRes> {
     const data = await this.fileService.getFileSystem(nodeId);
-    return Communication.res("Successfully got node's tree", data);
+    return res("Successfully got node's tree", data);
   }
 
   /**
@@ -63,7 +63,7 @@ export class FilesystemController {
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {
     const ref = this.fileService.uploadFile(file);
-    return Communication.res('Successfully uploaded file.', {
+    return res('Successfully uploaded file.', {
       ref: ref,
     });
   }
@@ -76,7 +76,7 @@ export class FilesystemController {
   @Post('file')
   async createFile(@Body() dto: CreateFileDto): Promise<ComRes> {
     await this.fileService.createFile(dto);
-    return Communication.res('Successfully created new file.', {});
+    return res('Successfully created new file.', {});
   }
 
   /**
@@ -85,7 +85,7 @@ export class FilesystemController {
   @Post('folder')
   async createFolder(@Body() dto: CreateFolderDto): Promise<ComRes> {
     await this.fileService.createFolder(dto);
-    return Communication.res('Successfully created new folder.', {});
+    return res('Successfully created new folder.', {});
   }
 
   /**
@@ -96,7 +96,7 @@ export class FilesystemController {
   @Patch('ref')
   async updateRef(@Body() dto: UpdateRefDto): Promise<ComRes> {
     await this.fileService.updateRef(dto);
-    return Communication.res('Successfully overwritten file.', {});
+    return res('Successfully overwritten file.', {});
   }
 
   /**
@@ -105,7 +105,7 @@ export class FilesystemController {
   @Patch('metadata')
   async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<ComRes> {
     await this.fileService.updateMetadata(dto);
-    return Communication.res('Successfully updated file metadata.', {});
+    return res('Successfully updated file metadata.', {});
   }
 
   /**
@@ -114,7 +114,7 @@ export class FilesystemController {
   @Patch('parent')
   async updateParent(@Body() dto: UpdateParentDto): Promise<ComRes> {
     await this.fileService.updateParent(dto);
-    return Communication.res('Successfully moved file to another parent.', {});
+    return res('Successfully moved file to another parent.', {});
   }
 
   /**
@@ -123,7 +123,7 @@ export class FilesystemController {
   @Delete()
   async delete(@Body() dto: GetNodeDto): Promise<ComRes> {
     await this.fileService.delete(dto);
-    return Communication.res('Successfully deleted node.', {});
+    return res('Successfully deleted node.', {});
   }
 
   /**

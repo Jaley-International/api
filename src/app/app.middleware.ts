@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { Communication, Status } from '../utils/communication';
+import { err, Status } from '../utils/communication';
 import { getConnection, MoreThan } from 'typeorm';
 import { Session } from '../user/user.entity';
 
@@ -12,7 +12,7 @@ export async function sessionValidator(
   const authHeader = req.header('authorization');
 
   if (!authHeader) {
-    throw Communication.err(
+    throw err(
       Status.ERROR_NO_AUTH_TOKEN,
       'Header does not contain any authorization field.',
     );
@@ -30,15 +30,12 @@ export async function sessionValidator(
 
   // checking if the session exist and is not expired
   if (!session) {
-    throw Communication.err(
-      Status.ERROR_INVALID_SESSION,
-      'Invalid or expired session.',
-    );
+    throw err(Status.ERROR_INVALID_SESSION, 'Invalid or expired session.');
   }
 
   // checking if the session corresponds to an existing user
   if (!session.user) {
-    throw Communication.err(
+    throw err(
       Status.ERROR_USER_NOT_FOUND,
       'No user corresponding to the current session has been found.',
     );

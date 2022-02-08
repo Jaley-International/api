@@ -17,7 +17,7 @@ import {
   sha256,
   sha512,
 } from 'src/utils/security';
-import { Communication, Status } from '../utils/communication';
+import { err, Status } from '../utils/communication';
 import { UploadsManager } from '../utils/uploadsManager';
 
 @Injectable()
@@ -43,7 +43,7 @@ export class UserService {
   async findOne(options: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepo.findOne(options);
     if (!user) {
-      throw Communication.err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
+      throw err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
   }
@@ -66,16 +66,10 @@ export class UserService {
         newUser.email = dto.email;
         return await this.userRepo.save(newUser);
       } else {
-        throw Communication.err(
-          Status.ERROR_EMAIL_ALREADY_USED,
-          'Email already in use.',
-        );
+        throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
       }
     } else {
-      throw Communication.err(
-        Status.ERROR_USERNAME_ALREADY_USED,
-        'Username already in use.',
-      );
+      throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
   }
 
@@ -100,6 +94,8 @@ export class UserService {
       where: { username: dto.user.username },
       relations: ['nodes'],
     });
+
+    //TODO remove user's file system deletion
 
     // removes the files stored on server disk
     // for the nodes representing a file
@@ -167,10 +163,7 @@ export class UserService {
         };
       }
     }
-    throw Communication.err(
-      Status.ERROR_INVALID_CREDENTIALS,
-      'Invalid credentials.',
-    );
+    throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
   }
 
   private async mailExists(email: string): Promise<boolean> {
