@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, getConnection, Repository } from 'typeorm';
 import { Session, User } from './user.entity';
+import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
   CreateUserDto,
@@ -18,7 +19,6 @@ import {
   sha512,
 } from 'src/utils/security';
 import { err, Status } from '../utils/communication';
-import { UploadsManager } from '../utils/uploadsManager';
 
 @Injectable()
 export class UserService {
@@ -84,27 +84,21 @@ export class UserService {
   }
 
   /**
-   * Delete the user possessing the id specified in the request
-   * and all of its possessed nodes.
+   * Delete the target user,
+   * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
   async delete(dto: DeleteUserDto): Promise<User> {
-    // loads the target user with its nodes
     const user = await this.findOne({
-      where: { username: dto.user.username },
+      where: { username: dto.username },
       relations: ['nodes'],
     });
-
-    //TODO remove user's file system deletion
-
-    // removes the files stored on server disk
-    // for the nodes representing a file
+    // removing nodes ownership
+    const nodeRepo = getConnection().getRepository(Node);
     for (const node of user.nodes) {
-      UploadsManager.deletePermanentFile(node);
+      node.owner = null;
+      await nodeRepo.save(node);
     }
-
-    // removes from database the target user and all its nodes
-    // because their onDelete option should be set to CASCADE
     return await this.userRepo.remove(user);
   }
 

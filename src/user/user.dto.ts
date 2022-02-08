@@ -72,5 +72,7 @@ export class UpdateUserDto {
 export class DeleteUserDto {
   @ApiProperty()
   @IsDefined()
-  user: User;
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  username: string;
 }
