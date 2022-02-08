@@ -24,8 +24,8 @@ export class Communication {
    * Returns an object representing a response body.
    * This is meant to be returned in a controller as a response.
    */
-  static res(status: Status, verbose: string, data: object): ComRes {
-    return { status: status, verbose: verbose, data: data };
+  static res(verbose: string, data: object): ComRes {
+    return { status: Status.SUCCESS, verbose: verbose, data: data };
   }
 
   /**
