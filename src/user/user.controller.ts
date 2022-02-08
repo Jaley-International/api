@@ -50,7 +50,7 @@ export class UserController {
   }
 
   /**
-   * Deletes a user by id and all its personal filesystem.
+   * Deletes a user by its username and all its personal filesystem.
    * Returns to client the deleted user.
    */
   @Delete()

@@ -97,7 +97,7 @@ export class UserService {
   async delete(dto: DeleteUserDto): Promise<User> {
     // loads the target user with its nodes
     const user = await this.findOne({
-      where: { id: dto.user.id },
+      where: { username: dto.user.username },
       relations: ['nodes'],
     });
 
@@ -143,7 +143,7 @@ export class UserService {
       if (key === user.hashedAuthenticationKey) {
         // session creation
         const session = new Session();
-        session.id = generateSessionIdentifier();
+        session.token = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
           Date.now() +
@@ -161,7 +161,7 @@ export class UserService {
           rsaPublicSharingKey: user.rsaPublicSharingKey,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
-            session.id,
+            session.token,
           ),
           sessionExpire: session.expire,
         };

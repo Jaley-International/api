@@ -24,7 +24,7 @@ export async function sessionValidator(
 
   // getting current session
   const session = await sessionRepo.findOne({
-    where: { id: token, expire: MoreThan(Date.now()) },
+    where: { token: token, expire: MoreThan(Date.now()) },
     relations: ['user'],
   });
 
