@@ -15,6 +15,7 @@ import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { User } from '../user/user.entity';
+import { Link } from '../link/link.entity';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -226,6 +227,17 @@ export class FilesystemService implements OnModuleInit {
     // removes the target node form database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
+  }
+
+  /**
+   * Returns all the links in relation with a targeted node.
+   */
+  async getLinks(nodeId: number): Promise<Link[]> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['links'],
+    });
+    return node.links;
   }
 
   /**

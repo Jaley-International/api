@@ -52,23 +52,10 @@ export class LinkService {
     return link.shareId;
   }
 
-  //TODO move to file system module
-  /**
-   * Returns all the links in relation with a targeted node.
-   * @param nodeId
-   */
-  async getLinksByNode(nodeId: number): Promise<Link[]> {
-    const node = await this.fileService.findOne({
-      where: { id: nodeId },
-      relations: ['links'],
-    });
-    return node.links;
-  }
-
   /**
    * Returns the node in relation with a targeted link.
    */
-  async getNodeByLink(linkId: string): Promise<Node> {
+  async getNode(linkId: string): Promise<Node> {
     const link = await this.findOne({
       where: { shareId: linkId },
       relations: ['node'],

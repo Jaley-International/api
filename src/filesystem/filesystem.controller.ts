@@ -52,6 +52,16 @@ export class FilesystemController {
     return res("Successfully got node's tree", { filesystem: filesystem });
   }
 
+  @Get(':nodeId/links')
+  async getLinksByNode(
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+  ): Promise<ComRes> {
+    const links = await this.fileService.getLinks(nodeId);
+    return res('Successfully got all node links.', {
+      links: links,
+    });
+  }
+
   /**
    * Uploads a file object into the database architectures.
    * This requires to have previously uploaded a file

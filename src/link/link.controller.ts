@@ -1,16 +1,9 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { res, ComRes } from '../utils/communication';
 import { LinkService } from './link.service';
 import { CreateLinkDto } from './link.dto';
 
-@Controller('link')
+@Controller('links')
 export class LinkController {
   constructor(private linkService: LinkService) {}
 
@@ -22,20 +15,9 @@ export class LinkController {
     });
   }
 
-  //TODO move to file system module
-  @Get(':nodeid')
-  async getLinksByNode(
-    @Param('nodeid', ParseIntPipe) nodeId: number,
-  ): Promise<ComRes> {
-    const links = await this.linkService.getLinksByNode(nodeId);
-    return res('Successfully got all node links.', {
-      links: links,
-    });
-  }
-
-  @Get('node/:linkid')
-  async getNodeByLink(@Param('linkid') linkId: string): Promise<ComRes> {
-    const node = await this.linkService.getNodeByLink(linkId);
+  @Get(':linkId/node')
+  async getNodeByLink(@Param('linkId') linkId: string): Promise<ComRes> {
+    const node = await this.linkService.getNode(linkId);
     const link = await this.linkService.findById(linkId);
     return res("Successfully got node's link", {
       link: link,
