@@ -4,7 +4,6 @@ import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
   CreateFileDto,
   CreateFolderDto,
-  GetNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
@@ -15,6 +14,7 @@ import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { User } from '../user/user.entity';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -111,7 +111,7 @@ export class FilesystemService implements OnModuleInit {
    * Uploads a file object into the database architectures.
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async createFile(dto: CreateFileDto) {
+  async createFile(curUser: User, dto: CreateFileDto) {
     const newFile = new Node();
     newFile.iv = dto.iv;
     newFile.tag = dto.tag;
@@ -120,7 +120,7 @@ export class FilesystemService implements OnModuleInit {
     newFile.type = NodeType.FILE;
     newFile.ref = dto.ref;
     newFile.encryptedParentKey = dto.encryptedParentKey;
-    newFile.owner = dto.user;
+    newFile.owner = curUser;
     newFile.parent = await this.findOne({
       where: {
         id: dto.parentId,
@@ -134,7 +134,7 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(dto: CreateFolderDto) {
+  async createFolder(curUser: User, dto: CreateFolderDto) {
     const newFolder = new Node();
     newFolder.iv = dto.iv;
     newFolder.tag = dto.tag;
@@ -143,7 +143,7 @@ export class FilesystemService implements OnModuleInit {
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
     newFolder.encryptedParentKey = dto.encryptedParentKey;
-    newFolder.owner = dto.user;
+    newFolder.owner = curUser;
     newFolder.parent = await this.findOne({
       where: {
         id: dto.parentId,
@@ -157,10 +157,10 @@ export class FilesystemService implements OnModuleInit {
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(dto: UpdateRefDto) {
+  async updateRef(nodeId: number, dto: UpdateRefDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
         type: NodeType.FILE,
       },
     });
@@ -175,10 +175,10 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's metadata.
    */
-  async updateMetadata(dto: UpdateMetadataDto) {
+  async updateMetadata(nodeId: number, dto: UpdateMetadataDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
     node.encryptedMetadata = dto.newEncryptedMetadata;
@@ -188,10 +188,10 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(dto: UpdateParentDto) {
+  async updateParent(nodeId: number, dto: UpdateParentDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
 
@@ -209,10 +209,10 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Deletes a node by id and all of its descendant.
    */
-  async delete(dto: GetNodeDto) {
+  async delete(nodeId: number) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
     const descendants = await this.nodeRepo.findDescendants(node);

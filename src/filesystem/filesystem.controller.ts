@@ -11,14 +11,14 @@ import {
   StreamableFile,
   UploadedFile,
   UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
-import { Express, Response } from 'express';
+import { Express, Response, Request } from 'express';
 import {
   CreateFileDto,
   CreateFolderDto,
-  GetNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
@@ -26,8 +26,9 @@ import {
 import { diskStorage } from 'multer';
 import { UploadsManager } from '../utils/uploadsManager';
 import { res, ComRes } from '../utils/communication';
+import { sessionUser } from '../utils/session';
 
-@Controller('filesystem')
+@Controller('file-system')
 export class FilesystemController {
   constructor(private fileService: FilesystemService) {}
 
@@ -36,19 +37,94 @@ export class FilesystemController {
    */
   @Get()
   async getFileSystem(): Promise<ComRes> {
-    const data = await this.fileService.getFileSystem();
-    return res('Successfully got all file system.', data);
+    const filesystem = await this.fileService.getFileSystem();
+    return res('Successfully got all file system.', { filesystem: filesystem });
   }
 
   /**
    * Returns to client the target node's descendant tree.
    */
-  @Get(':nodeid')
+  @Get(':nodeId')
   async getFileSystemById(
-    @Param('nodeid', ParseIntPipe) nodeId: number,
+    @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ComRes> {
-    const data = await this.fileService.getFileSystem(nodeId);
-    return res("Successfully got node's tree", data);
+    const filesystem = await this.fileService.getFileSystem(nodeId);
+    return res("Successfully got node's tree", { filesystem: filesystem });
+  }
+
+  /**
+   * Uploads a file object into the database architectures.
+   * This requires to have previously uploaded a file
+   * in order to move it from temporary folder to permanent folder.
+   */
+  @Post('file')
+  async createFile(
+    @Req() req: Request,
+    @Body() dto: CreateFileDto,
+  ): Promise<ComRes> {
+    const curUser = await sessionUser(req);
+    await this.fileService.createFile(curUser, dto);
+    return res('Successfully created new file.', {});
+  }
+
+  /**
+   * Inserts a new folder in the file system.
+   */
+  @Post('folder')
+  async createFolder(
+    @Req() req: Request,
+    @Body() dto: CreateFolderDto,
+  ): Promise<ComRes> {
+    const curUser = await sessionUser(req);
+    await this.fileService.createFolder(curUser, dto);
+    return res('Successfully created new folder.', {});
+  }
+
+  /**
+   * Updates a node's reference.
+   * This requires to have previously uploaded a file
+   * in order to move it from temporary folder to permanent folder.
+   */
+  @Patch(':nodeId/ref')
+  async updateRef(
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+    @Body() dto: UpdateRefDto,
+  ): Promise<ComRes> {
+    await this.fileService.updateRef(nodeId, dto);
+    return res('Successfully overwritten file.', {});
+  }
+
+  /**
+   * Updates a node's metadata.
+   */
+  @Patch(':nodeId/metadata')
+  async updateMetadata(
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+    @Body() dto: UpdateMetadataDto,
+  ): Promise<ComRes> {
+    await this.fileService.updateMetadata(nodeId, dto);
+    return res('Successfully updated file metadata.', {});
+  }
+
+  /**
+   * Moves a node inside the filesystem tree.
+   */
+  @Patch(':nodeId/parent')
+  async updateParent(
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+    @Body() dto: UpdateParentDto,
+  ): Promise<ComRes> {
+    await this.fileService.updateParent(nodeId, dto);
+    return res('Successfully moved file to another parent.', {});
+  }
+
+  /**
+   * Deletes a node and all of its descendants.
+   */
+  @Delete(':nodeId')
+  async delete(@Param('nodeId', ParseIntPipe) nodeId: number): Promise<ComRes> {
+    await this.fileService.delete(nodeId);
+    return res('Successfully deleted node.', {});
   }
 
   /**
@@ -63,82 +139,21 @@ export class FilesystemController {
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {
     const ref = this.fileService.uploadFile(file);
-    return res('Successfully uploaded file.', {
-      ref: ref,
-    });
-  }
-
-  /**
-   * Uploads a file object into the database architectures.
-   * This requires to have previously uploaded a file
-   * in order to move it from temporary folder to permanent folder.
-   */
-  @Post('file')
-  async createFile(@Body() dto: CreateFileDto): Promise<ComRes> {
-    await this.fileService.createFile(dto);
-    return res('Successfully created new file.', {});
-  }
-
-  /**
-   * Inserts a new folder in the file system.
-   */
-  @Post('folder')
-  async createFolder(@Body() dto: CreateFolderDto): Promise<ComRes> {
-    await this.fileService.createFolder(dto);
-    return res('Successfully created new folder.', {});
-  }
-
-  /**
-   * Updates a node's reference.
-   * This requires to have previously uploaded a file
-   * in order to move it from temporary folder to permanent folder.
-   */
-  @Patch('ref')
-  async updateRef(@Body() dto: UpdateRefDto): Promise<ComRes> {
-    await this.fileService.updateRef(dto);
-    return res('Successfully overwritten file.', {});
-  }
-
-  /**
-   * Updates a node's metadata.
-   */
-  @Patch('metadata')
-  async updateMetadata(@Body() dto: UpdateMetadataDto): Promise<ComRes> {
-    await this.fileService.updateMetadata(dto);
-    return res('Successfully updated file metadata.', {});
-  }
-
-  /**
-   * Moves a node inside the filesystem tree.
-   */
-  @Patch('parent')
-  async updateParent(@Body() dto: UpdateParentDto): Promise<ComRes> {
-    await this.fileService.updateParent(dto);
-    return res('Successfully moved file to another parent.', {});
-  }
-
-  /**
-   * Deletes a node and all of its descendants.
-   */
-  @Delete()
-  async delete(@Body() dto: GetNodeDto): Promise<ComRes> {
-    await this.fileService.delete(dto);
-    return res('Successfully deleted node.', {});
+    return res('Successfully uploaded file.', { ref: ref });
   }
 
   /**
    * Gets the corresponding file content of a node found by id.
    */
-  @Get('content/:nodeid')
+  @Get(':nodeId/content')
   async downloadFile(
-    @Param('nodeid', ParseIntPipe) nodeId: number,
+    @Param('nodeId', ParseIntPipe) nodeId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     // setting encoding method to ensure loyal data retransmission
     res.set({
       'Content-Encoding': 'identity',
     });
-
     // returns directly the encrypted file,
     // not encapsulated in a response body like the other routes
     return await this.fileService.getFile(nodeId);

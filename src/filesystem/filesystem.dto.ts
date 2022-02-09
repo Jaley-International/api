@@ -6,7 +6,6 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../user/user.entity';
 
 export class CreateFolderDto {
   @ApiProperty()
@@ -33,10 +32,6 @@ export class CreateFolderDto {
 
   @ApiProperty()
   @IsDefined()
-  user: User;
-
-  @ApiProperty()
-  @IsDefined()
   @IsString()
   @Matches(/^[0-9a-zA-Z]+$/)
   encryptedParentKey: string;
@@ -55,32 +50,21 @@ export class CreateFileDto extends CreateFolderDto {
   ref: string;
 }
 
-export class GetNodeDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsInt()
-  nodeId: number;
-
-  @ApiProperty()
-  @IsDefined()
-  user: User;
-}
-
-export class UpdateMetadataDto extends GetNodeDto {
+export class UpdateMetadataDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
   newEncryptedMetadata: string;
 }
 
-export class UpdateParentDto extends GetNodeDto {
+export class UpdateParentDto {
   @ApiProperty()
   @IsDefined()
   @IsInt()
   newParentId: number;
 }
 
-export class UpdateRefDto extends GetNodeDto {
+export class UpdateRefDto {
   @ApiProperty()
   @IsDefined()
   @IsString()

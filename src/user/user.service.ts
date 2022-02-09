@@ -131,7 +131,7 @@ export class UserService {
       const key = sha512(dto.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {
-        // session creation
+        // new session
         const session = new Session();
         session.token = generateSessionIdentifier();
         session.issuedAt = Date.now();
@@ -140,8 +140,6 @@ export class UserService {
           parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
-
-        // database upload
         await this.sessionRepo.save(session);
 
         // returning encryption keys and connection information
