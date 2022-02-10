@@ -24,7 +24,7 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
-import { UploadsManager } from '../utils/uploadsManager';
+import { DiskFolders } from '../utils/uploadsManager';
 import { res, ComRes } from '../utils/communication';
 import { sessionUser } from '../utils/session';
 
@@ -147,7 +147,7 @@ export class FilesystemController {
   @Post('content')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({ destination: UploadsManager.tmpFolder }),
+      storage: diskStorage({ destination: DiskFolders.TMP }),
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {

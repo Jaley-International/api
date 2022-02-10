@@ -9,7 +9,12 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
-import { UploadsManager } from '../utils/uploadsManager';
+import {
+  deletePermanentFile,
+  deleteTmpFile,
+  DiskFolders,
+  moveFileFromTmpToPermanent,
+} from '../utils/uploadsManager';
 import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
@@ -102,7 +107,7 @@ export class FilesystemService implements OnModuleInit {
 
     // file will be deleted in 30 seconds
     setTimeout(() => {
-      UploadsManager.deleteTmpFile(file.filename);
+      deleteTmpFile(file.filename);
     }, 30000);
 
     return file.filename;
@@ -128,7 +133,7 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
-    UploadsManager.moveFileFromTmpToPermanent(body.ref);
+    moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
   }
 
@@ -166,8 +171,8 @@ export class FilesystemService implements OnModuleInit {
       },
     });
 
-    UploadsManager.moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
-    UploadsManager.deletePermanentFile(node); // deleting old file
+    moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
+    deletePermanentFile(node); // deleting old file
     node.ref = body.newRef; // updating file reference (just like overwrite)
 
     await this.nodeRepo.save(node);
@@ -221,7 +226,7 @@ export class FilesystemService implements OnModuleInit {
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const descendant of descendants) {
-      UploadsManager.deletePermanentFile(descendant);
+      deletePermanentFile(descendant);
     }
 
     // removes the target node form database with all its descendants
@@ -248,7 +253,7 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
     });
-    const path = join(process.cwd(), UploadsManager.uploadFolder, node.ref);
+    const path = join(process.cwd(), DiskFolders.PERM, node.ref);
     if (existsSync(path)) {
       const file = createReadStream(path);
       return new StreamableFile(file);
