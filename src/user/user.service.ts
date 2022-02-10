@@ -6,7 +6,7 @@ import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
   CreateUserDto,
-  DeleteUserDto,
+  LoginDetails,
   UpdateUserDto,
 } from './user.dto';
 import {
@@ -77,10 +77,12 @@ export class UserService {
    * Updates a user account parameters specified in the request.
    * Returns the updated user.
    */
-  async update(dto: UpdateUserDto): Promise<User> {
-    dto.user.email = dto.email;
-    await this.userRepo.save(dto.user);
-    return dto.user;
+  async update(username: string, dto: UpdateUserDto): Promise<User> {
+    const user = await this.findOne({ where: { username: username } });
+    user.email = dto.email;
+    // ...add other things to update in the future
+    await this.userRepo.save(user);
+    return user;
   }
 
   /**
@@ -88,9 +90,9 @@ export class UserService {
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(dto: DeleteUserDto): Promise<User> {
+  async delete(username: string): Promise<User> {
     const user = await this.findOne({
-      where: { username: dto.username },
+      where: { username: username },
       relations: ['nodes'],
     });
     // removing nodes ownership
@@ -124,7 +126,7 @@ export class UserService {
    * Returns the encryption keys of the user.
    * Throws an exception if user's credential are not valid.
    */
-  async login(dto: AuthenticationDto): Promise<object> {
+  async login(dto: AuthenticationDto): Promise<LoginDetails> {
     const user = await this.userRepo.findOne({ username: dto.username });
 
     if (user) {

@@ -1,6 +1,5 @@
 import { IsDefined, IsEmail, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from './user.entity';
 
 export class AuthenticationDto {
   @ApiProperty()
@@ -61,18 +60,14 @@ export class CreateUserDto {
 export class UpdateUserDto {
   @ApiProperty()
   @IsDefined()
-  user: User;
-
-  @ApiProperty()
-  @IsDefined()
   @IsEmail()
   email: string;
 }
 
-export class DeleteUserDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
-  username: string;
+export interface LoginDetails {
+  encryptedMasterKey: string;
+  encryptedRsaPrivateSharingKey: string;
+  rsaPublicSharingKey: string;
+  encryptedSessionIdentifier: string;
+  sessionExpire: number;
 }
