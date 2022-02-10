@@ -38,8 +38,8 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post()
-  async create(@Body() dto: CreateUserDto): Promise<ComRes> {
-    const user = await this.userService.create(dto);
+  async create(@Body() body: CreateUserDto): Promise<ComRes> {
+    const user = await this.userService.create(body);
     return res('Successfully created a new user account.', { user: user });
   }
 
@@ -48,8 +48,8 @@ export class UserController {
    * Returns to client its login information.
    */
   @Post('/login')
-  async login(@Body() dto: AuthenticationDto): Promise<ComRes> {
-    const loginDetails = await this.userService.login(dto);
+  async login(@Body() body: AuthenticationDto): Promise<ComRes> {
+    const loginDetails = await this.userService.login(body);
     return res('Successfully logged in.', { loginDetails: loginDetails });
   }
 
@@ -60,9 +60,9 @@ export class UserController {
   @Patch(':username')
   async update(
     @Param('username') username: string,
-    @Body() dto: UpdateUserDto,
+    @Body() body: UpdateUserDto,
   ): Promise<ComRes> {
-    const user = await this.userService.update(username, dto);
+    const user = await this.userService.update(username, body);
     return res('Successfully updated user account data.', { user: user });
   }
 

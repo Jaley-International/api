@@ -52,6 +52,9 @@ export class FilesystemController {
     return res("Successfully got node's tree", { filesystem: filesystem });
   }
 
+  /**
+   * Returns to client all the links referencing the target node.
+   */
   @Get(':nodeId/links')
   async getLinksByNode(
     @Param('nodeId', ParseIntPipe) nodeId: number,
@@ -70,10 +73,10 @@ export class FilesystemController {
   @Post('file')
   async createFile(
     @Req() req: Request,
-    @Body() dto: CreateFileDto,
+    @Body() body: CreateFileDto,
   ): Promise<ComRes> {
     const curUser = await sessionUser(req);
-    await this.fileService.createFile(curUser, dto);
+    await this.fileService.createFile(curUser, body);
     return res('Successfully created new file.', {});
   }
 
@@ -83,10 +86,10 @@ export class FilesystemController {
   @Post('folder')
   async createFolder(
     @Req() req: Request,
-    @Body() dto: CreateFolderDto,
+    @Body() body: CreateFolderDto,
   ): Promise<ComRes> {
     const curUser = await sessionUser(req);
-    await this.fileService.createFolder(curUser, dto);
+    await this.fileService.createFolder(curUser, body);
     return res('Successfully created new folder.', {});
   }
 
@@ -98,9 +101,9 @@ export class FilesystemController {
   @Patch(':nodeId/ref')
   async updateRef(
     @Param('nodeId', ParseIntPipe) nodeId: number,
-    @Body() dto: UpdateRefDto,
+    @Body() body: UpdateRefDto,
   ): Promise<ComRes> {
-    await this.fileService.updateRef(nodeId, dto);
+    await this.fileService.updateRef(nodeId, body);
     return res('Successfully overwritten file.', {});
   }
 
@@ -110,9 +113,9 @@ export class FilesystemController {
   @Patch(':nodeId/metadata')
   async updateMetadata(
     @Param('nodeId', ParseIntPipe) nodeId: number,
-    @Body() dto: UpdateMetadataDto,
+    @Body() body: UpdateMetadataDto,
   ): Promise<ComRes> {
-    await this.fileService.updateMetadata(nodeId, dto);
+    await this.fileService.updateMetadata(nodeId, body);
     return res('Successfully updated file metadata.', {});
   }
 
@@ -122,9 +125,9 @@ export class FilesystemController {
   @Patch(':nodeId/parent')
   async updateParent(
     @Param('nodeId', ParseIntPipe) nodeId: number,
-    @Body() dto: UpdateParentDto,
+    @Body() body: UpdateParentDto,
   ): Promise<ComRes> {
-    await this.fileService.updateParent(nodeId, dto);
+    await this.fileService.updateParent(nodeId, body);
     return res('Successfully moved file to another parent.', {});
   }
 

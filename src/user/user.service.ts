@@ -52,18 +52,18 @@ export class UserService {
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async create(dto: CreateUserDto): Promise<User> {
-    if (!(await this.userExists(dto.username))) {
-      if (!(await this.mailExists(dto.email))) {
+  async create(body: CreateUserDto): Promise<User> {
+    if (!(await this.userExists(body.username))) {
+      if (!(await this.mailExists(body.email))) {
         const newUser = new User();
-        newUser.username = dto.username;
-        newUser.clientRandomValue = dto.clientRandomValue;
-        newUser.encryptedMasterKey = dto.encryptedMasterKey;
-        newUser.hashedAuthenticationKey = dto.hashedAuthenticationKey;
+        newUser.username = body.username;
+        newUser.clientRandomValue = body.clientRandomValue;
+        newUser.encryptedMasterKey = body.encryptedMasterKey;
+        newUser.hashedAuthenticationKey = body.hashedAuthenticationKey;
         newUser.encryptedRsaPrivateSharingKey =
-          dto.encryptedRsaPrivateSharingKey;
-        newUser.rsaPublicSharingKey = dto.rsaPublicSharingKey;
-        newUser.email = dto.email;
+          body.encryptedRsaPrivateSharingKey;
+        newUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
+        newUser.email = body.email;
         return await this.userRepo.save(newUser);
       } else {
         throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
@@ -77,9 +77,9 @@ export class UserService {
    * Updates a user account parameters specified in the request.
    * Returns the updated user.
    */
-  async update(username: string, dto: UpdateUserDto): Promise<User> {
+  async update(username: string, body: UpdateUserDto): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
-    user.email = dto.email;
+    user.email = body.email;
     // ...add other things to update in the future
     await this.userRepo.save(user);
     return user;
@@ -126,11 +126,11 @@ export class UserService {
    * Returns the encryption keys of the user.
    * Throws an exception if user's credential are not valid.
    */
-  async login(dto: AuthenticationDto): Promise<LoginDetails> {
-    const user = await this.userRepo.findOne({ username: dto.username });
+  async login(body: AuthenticationDto): Promise<LoginDetails> {
+    const user = await this.userRepo.findOne({ username: body.username });
 
     if (user) {
-      const key = sha512(dto.derivedAuthenticationKey);
+      const key = sha512(body.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {
         // new session

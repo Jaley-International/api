@@ -112,42 +112,42 @@ export class FilesystemService implements OnModuleInit {
    * Uploads a file object into the database architectures.
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async createFile(curUser: User, dto: CreateFileDto) {
+  async createFile(curUser: User, body: CreateFileDto) {
     const newFile = new Node();
-    newFile.iv = dto.iv;
-    newFile.tag = dto.tag;
-    newFile.encryptedKey = dto.encryptedKey;
-    newFile.encryptedMetadata = dto.encryptedMetadata;
+    newFile.iv = body.iv;
+    newFile.tag = body.tag;
+    newFile.encryptedKey = body.encryptedKey;
+    newFile.encryptedMetadata = body.encryptedMetadata;
     newFile.type = NodeType.FILE;
-    newFile.ref = dto.ref;
-    newFile.encryptedParentKey = dto.encryptedParentKey;
+    newFile.ref = body.ref;
+    newFile.encryptedParentKey = body.encryptedParentKey;
     newFile.owner = curUser;
     newFile.parent = await this.findOne({
       where: {
-        id: dto.parentId,
+        id: body.parentId,
         type: NodeType.FOLDER,
       },
     });
-    UploadsManager.moveFileFromTmpToPermanent(dto.ref);
+    UploadsManager.moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
   }
 
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(curUser: User, dto: CreateFolderDto) {
+  async createFolder(curUser: User, body: CreateFolderDto) {
     const newFolder = new Node();
-    newFolder.iv = dto.iv;
-    newFolder.tag = dto.tag;
-    newFolder.encryptedKey = dto.encryptedKey;
-    newFolder.encryptedMetadata = dto.encryptedMetadata;
+    newFolder.iv = body.iv;
+    newFolder.tag = body.tag;
+    newFolder.encryptedKey = body.encryptedKey;
+    newFolder.encryptedMetadata = body.encryptedMetadata;
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
-    newFolder.encryptedParentKey = dto.encryptedParentKey;
+    newFolder.encryptedParentKey = body.encryptedParentKey;
     newFolder.owner = curUser;
     newFolder.parent = await this.findOne({
       where: {
-        id: dto.parentId,
+        id: body.parentId,
         type: NodeType.FOLDER,
       },
     });
@@ -158,7 +158,7 @@ export class FilesystemService implements OnModuleInit {
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(nodeId: number, dto: UpdateRefDto) {
+  async updateRef(nodeId: number, body: UpdateRefDto) {
     const node = await this.findOne({
       where: {
         id: nodeId,
@@ -166,9 +166,9 @@ export class FilesystemService implements OnModuleInit {
       },
     });
 
-    UploadsManager.moveFileFromTmpToPermanent(dto.newRef); // moving new file to permanent folder
+    UploadsManager.moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
     UploadsManager.deletePermanentFile(node); // deleting old file
-    node.ref = dto.newRef; // updating file reference (just like overwrite)
+    node.ref = body.newRef; // updating file reference (just like overwrite)
 
     await this.nodeRepo.save(node);
   }
@@ -176,20 +176,20 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's metadata.
    */
-  async updateMetadata(nodeId: number, dto: UpdateMetadataDto) {
+  async updateMetadata(nodeId: number, body: UpdateMetadataDto) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
     });
-    node.encryptedMetadata = dto.newEncryptedMetadata;
+    node.encryptedMetadata = body.newEncryptedMetadata;
     await this.nodeRepo.save(node);
   }
 
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(nodeId: number, dto: UpdateParentDto) {
+  async updateParent(nodeId: number, body: UpdateParentDto) {
     const node = await this.findOne({
       where: {
         id: nodeId,
@@ -199,7 +199,7 @@ export class FilesystemService implements OnModuleInit {
     // updating parent
     node.parent = await this.findOne({
       where: {
-        id: dto.newParentId,
+        id: body.newParentId,
         type: NodeType.FOLDER,
       },
     });

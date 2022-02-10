@@ -39,14 +39,14 @@ export class LinkService {
    * Creates a new link in relation with an existing node;
    * Returns the created link's id (shareId).
    */
-  async createLink(dto: CreateLinkDto): Promise<string> {
+  async createLink(body: CreateLinkDto): Promise<string> {
     const link = new Link();
     link.shareId = forge.util.bytesToHex(forge.random.getBytesSync(8));
-    link.encryptedNodeKey = dto.encryptedNodeKey;
-    link.encryptedShareKey = dto.encryptedShareKey;
-    link.iv = dto.iv;
+    link.encryptedNodeKey = body.encryptedNodeKey;
+    link.encryptedShareKey = body.encryptedShareKey;
+    link.iv = body.iv;
     link.node = await this.fileService.findOne({
-      where: { id: dto.nodeId, type: NodeType.FILE },
+      where: { id: body.nodeId, type: NodeType.FILE },
     });
     await this.linkRepo.save(link);
     return link.shareId;
