@@ -7,14 +7,9 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import {
-  AuthenticationDto,
-  CreateUserDto,
-  DeleteUserDto,
-  UpdateUserDto,
-} from './user.dto';
+import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
 import { UserService } from './user.service';
-import { Communication, ComRes, Status } from '../utils/communication';
+import { res, ComRes } from '../utils/communication';
 
 @Controller('users')
 export class UserController {
@@ -25,12 +20,17 @@ export class UserController {
    */
   @Get()
   async findAll(): Promise<ComRes> {
-    const data = await this.userService.findAll();
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully got all users.',
-      data,
-    );
+    const users = await this.userService.findAll();
+    return res('Successfully got all users.', { users: users });
+  }
+
+  /**
+   * Returns to client the target user's salt.
+   */
+  @Get(':username/salt')
+  async getSalt(@Param('username') username: string): Promise<ComRes> {
+    const salt = await this.userService.getSalt(username);
+    return res('Successfully got salt.', { salt: salt });
   }
 
   /**
@@ -38,54 +38,41 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post()
-  async create(@Body() dto: CreateUserDto): Promise<ComRes> {
-    const data = await this.userService.create(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully created a new user account.',
-      data,
-    );
+  async create(@Body() body: CreateUserDto): Promise<ComRes> {
+    const user = await this.userService.create(body);
+    return res('Successfully created a new user account.', { user: user });
+  }
+
+  /**
+   * Authenticate a user.
+   * Returns to client its login information.
+   */
+  @Post('/login')
+  async login(@Body() body: AuthenticationDto): Promise<ComRes> {
+    const loginDetails = await this.userService.login(body);
+    return res('Successfully logged in.', { loginDetails: loginDetails });
   }
 
   /**
    * Updates a user account parameters specified in the request.
    * Returns to client the updated user.
    */
-  @Patch()
-  async update(@Body() dto: UpdateUserDto): Promise<ComRes> {
-    const data = await this.userService.update(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully updated user account data.',
-      data,
-    );
+  @Patch(':username')
+  async update(
+    @Param('username') username: string,
+    @Body() body: UpdateUserDto,
+  ): Promise<ComRes> {
+    const user = await this.userService.update(username, body);
+    return res('Successfully updated user account data.', { user: user });
   }
 
   /**
-   * Deletes a user by id and all its personal filesystem.
+   * Deletes a user by its username.
    * Returns to client the deleted user.
    */
-  @Delete()
-  async delete(@Body() dto: DeleteUserDto): Promise<ComRes> {
-    const data = await this.userService.delete(dto);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully deleted user and all of its filesystem.',
-      data,
-    );
-  }
-
-  @Get('salt/:username')
-  async getSalt(@Param('username') username: string): Promise<ComRes> {
-    const data = await this.userService.getSalt(username);
-    return Communication.res(Status.SUCCESS, 'Successfully got salt.', {
-      salt: data,
-    });
-  }
-
-  @Post('login')
-  async login(@Body() dto: AuthenticationDto): Promise<ComRes> {
-    const data = await this.userService.login(dto);
-    return Communication.res(Status.SUCCESS, 'Successfully logged in.', data);
+  @Delete(':username')
+  async delete(@Param('username') username: string): Promise<ComRes> {
+    const user = await this.userService.delete(username);
+    return res('Successfully deleted user.', { user: user });
   }
 }

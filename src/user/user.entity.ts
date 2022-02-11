@@ -5,16 +5,12 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryColumn,
-  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ update: false })
+  @PrimaryColumn()
   username: string;
 
   @Column()
@@ -50,7 +46,7 @@ export class User {
 @Entity()
 export class Session {
   @PrimaryColumn()
-  id: string;
+  token: string;
 
   @Column({ type: 'bigint' })
   expire: number;
@@ -61,6 +57,6 @@ export class Session {
   @Column()
   ip: string;
 
-  @ManyToOne(() => User, (user) => user.sessions)
+  @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
   user: User;
 }

@@ -1,45 +1,32 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-} from '@nestjs/common';
-import { Communication, ComRes, Status } from '../utils/communication';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { res, ComRes } from '../utils/communication';
 import { LinkService } from './link.service';
 import { CreateLinkDto } from './link.dto';
 
-@Controller('link')
+@Controller('links')
 export class LinkController {
   constructor(private linkService: LinkService) {}
 
+  /**
+   * Creates a new sharing link which redirects to the download of a node.
+   * Returns to client the generated id link (share id).
+   */
   @Post()
-  async createLink(@Body() dto: CreateLinkDto): Promise<ComRes> {
-    const shareId = await this.linkService.createLink(dto);
-    return Communication.res(Status.SUCCESS, 'Successfully created new link.', {
+  async createLink(@Body() body: CreateLinkDto): Promise<ComRes> {
+    const shareId = await this.linkService.createLink(body);
+    return res('Successfully created new link.', {
       shareId: shareId,
     });
   }
 
-  //TODO move to file system module
-  @Get(':nodeid')
-  async getLinksByNode(
-    @Param('nodeid', ParseIntPipe) nodeId: number,
-  ): Promise<ComRes> {
-    const links = await this.linkService.getLinksByNode(nodeId);
-    return Communication.res(
-      Status.SUCCESS,
-      'Successfully got all node links.',
-      { links: links },
-    );
-  }
-
-  @Get('node/:linkid')
-  async getNodeByLink(@Param('linkid') linkId: string): Promise<ComRes> {
-    const node = await this.linkService.getNodeByLink(linkId);
+  /**
+   * Returns to client the node referenced by the target link.
+   */
+  @Get(':linkId/node')
+  async getNodeByLink(@Param('linkId') linkId: string): Promise<ComRes> {
+    const node = await this.linkService.getNode(linkId);
     const link = await this.linkService.findById(linkId);
-    return Communication.res(Status.SUCCESS, "Successfully got node's link", {
+    return res("Successfully got node's link", {
       link: link,
       node: node,
     });

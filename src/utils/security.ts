@@ -1,7 +1,7 @@
 import assert from 'assert';
 import forge, { Hex } from 'node-forge';
 
-// TODO : Change instance ID to be unique for each instance
+// TODO : Change instance ID to be unique for each pec instance
 export const INSTANCE_ID = 'PEC-4Kua7tTa5XAb';
 export const SERVER_RANDOM_VALUE = 'd478b7b1ed80bbeed2401218c68137d1';
 

@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, getConnection, Repository } from 'typeorm';
 import { Session, User } from './user.entity';
+import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
   CreateUserDto,
-  DeleteUserDto,
+  LoginDetails,
   UpdateUserDto,
 } from './user.dto';
 import {
@@ -17,8 +18,7 @@ import {
   sha256,
   sha512,
 } from 'src/utils/security';
-import { Communication, Status } from '../utils/communication';
-import { UploadsManager } from '../utils/uploadsManager';
+import { err, Status } from '../utils/communication';
 
 @Injectable()
 export class UserService {
@@ -43,7 +43,7 @@ export class UserService {
   async findOne(options: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepo.findOne(options);
     if (!user) {
-      throw Communication.err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
+      throw err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
   }
@@ -52,30 +52,24 @@ export class UserService {
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async create(dto: CreateUserDto): Promise<User> {
-    if (!(await this.userExists(dto.username))) {
-      if (!(await this.mailExists(dto.email))) {
+  async create(body: CreateUserDto): Promise<User> {
+    if (!(await this.userExists(body.username))) {
+      if (!(await this.mailExists(body.email))) {
         const newUser = new User();
-        newUser.username = dto.username;
-        newUser.clientRandomValue = dto.clientRandomValue;
-        newUser.encryptedMasterKey = dto.encryptedMasterKey;
-        newUser.hashedAuthenticationKey = dto.hashedAuthenticationKey;
+        newUser.username = body.username;
+        newUser.clientRandomValue = body.clientRandomValue;
+        newUser.encryptedMasterKey = body.encryptedMasterKey;
+        newUser.hashedAuthenticationKey = body.hashedAuthenticationKey;
         newUser.encryptedRsaPrivateSharingKey =
-          dto.encryptedRsaPrivateSharingKey;
-        newUser.rsaPublicSharingKey = dto.rsaPublicSharingKey;
-        newUser.email = dto.email;
+          body.encryptedRsaPrivateSharingKey;
+        newUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
+        newUser.email = body.email;
         return await this.userRepo.save(newUser);
       } else {
-        throw Communication.err(
-          Status.ERROR_EMAIL_ALREADY_USED,
-          'Email already in use.',
-        );
+        throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
       }
     } else {
-      throw Communication.err(
-        Status.ERROR_USERNAME_ALREADY_USED,
-        'Username already in use.',
-      );
+      throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
   }
 
@@ -83,32 +77,30 @@ export class UserService {
    * Updates a user account parameters specified in the request.
    * Returns the updated user.
    */
-  async update(dto: UpdateUserDto): Promise<User> {
-    dto.user.email = dto.email;
-    await this.userRepo.save(dto.user);
-    return dto.user;
+  async update(username: string, body: UpdateUserDto): Promise<User> {
+    const user = await this.findOne({ where: { username: username } });
+    user.email = body.email;
+    // ...add other things to update in the future
+    await this.userRepo.save(user);
+    return user;
   }
 
   /**
-   * Delete the user possessing the id specified in the request
-   * and all of its possessed nodes.
+   * Delete the target user,
+   * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(dto: DeleteUserDto): Promise<User> {
-    // loads the target user with its nodes
+  async delete(username: string): Promise<User> {
     const user = await this.findOne({
-      where: { id: dto.user.id },
+      where: { username: username },
       relations: ['nodes'],
     });
-
-    // removes the files stored on server disk
-    // for the nodes representing a file
+    // removing nodes ownership
+    const nodeRepo = getConnection().getRepository(Node);
     for (const node of user.nodes) {
-      UploadsManager.deletePermanentFile(node);
+      node.owner = null;
+      await nodeRepo.save(node);
     }
-
-    // removes from database the target user and all its nodes
-    // because their onDelete option should be set to CASCADE
     return await this.userRepo.remove(user);
   }
 
@@ -134,24 +126,22 @@ export class UserService {
    * Returns the encryption keys of the user.
    * Throws an exception if user's credential are not valid.
    */
-  async login(dto: AuthenticationDto): Promise<object> {
-    const user = await this.userRepo.findOne({ username: dto.username });
+  async login(body: AuthenticationDto): Promise<LoginDetails> {
+    const user = await this.userRepo.findOne({ username: body.username });
 
     if (user) {
-      const key = sha512(dto.derivedAuthenticationKey);
+      const key = sha512(body.derivedAuthenticationKey);
 
       if (key === user.hashedAuthenticationKey) {
-        // session creation
+        // new session
         const session = new Session();
-        session.id = generateSessionIdentifier();
+        session.token = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
           Date.now() +
           parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
-
-        // database upload
         await this.sessionRepo.save(session);
 
         // returning encryption keys and connection information
@@ -161,16 +151,13 @@ export class UserService {
           rsaPublicSharingKey: user.rsaPublicSharingKey,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
-            session.id,
+            session.token,
           ),
           sessionExpire: session.expire,
         };
       }
     }
-    throw Communication.err(
-      Status.ERROR_INVALID_CREDENTIALS,
-      'Invalid credentials.',
-    );
+    throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
   }
 
   private async mailExists(email: string): Promise<boolean> {

@@ -4,16 +4,23 @@ import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
   CreateFileDto,
   CreateFolderDto,
-  GetNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
-import { UploadsManager } from '../utils/uploadsManager';
-import { Communication, Status } from '../utils/communication';
+import {
+  deletePermanentFile,
+  deleteTmpFile,
+  DiskFolders,
+  moveFileFromTmpToPermanent,
+} from '../utils/uploadsManager';
+import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
+import { existsSync } from 'fs';
+import { User } from '../user/user.entity';
+import { Link } from '../link/link.entity';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -53,10 +60,7 @@ export class FilesystemService implements OnModuleInit {
   private async findAll(): Promise<Node> {
     const data = await this.nodeRepo.findTrees();
     if (!data) {
-      throw Communication.err(
-        Status.ERROR_NODE_NOT_FOUND,
-        'Empty file system.',
-      );
+      throw err(Status.ERROR_NODE_NOT_FOUND, 'Empty file system.');
     }
     return data[0];
   }
@@ -68,7 +72,7 @@ export class FilesystemService implements OnModuleInit {
   async findOne(options: FindOneOptions<Node>): Promise<Node> {
     const node = await this.nodeRepo.findOne(options);
     if (!node) {
-      throw Communication.err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
+      throw err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
     }
     return node;
   }
@@ -95,7 +99,7 @@ export class FilesystemService implements OnModuleInit {
   uploadFile(file: Express.Multer.File): string {
     // error on invalid file
     if (!file) {
-      throw Communication.err(
+      throw err(
         Status.ERROR_INVALID_FILE,
         'Non existing or invalid file has been tried to be sent.',
       );
@@ -103,7 +107,7 @@ export class FilesystemService implements OnModuleInit {
 
     // file will be deleted in 30 seconds
     setTimeout(() => {
-      UploadsManager.deleteTmpFile(file.filename);
+      deleteTmpFile(file.filename);
     }, 30000);
 
     return file.filename;
@@ -113,42 +117,42 @@ export class FilesystemService implements OnModuleInit {
    * Uploads a file object into the database architectures.
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async createFile(dto: CreateFileDto) {
+  async createFile(curUser: User, body: CreateFileDto) {
     const newFile = new Node();
-    newFile.iv = dto.iv;
-    newFile.tag = dto.tag;
-    newFile.encryptedKey = dto.encryptedKey;
-    newFile.encryptedMetadata = dto.encryptedMetadata;
+    newFile.iv = body.iv;
+    newFile.tag = body.tag;
+    newFile.encryptedKey = body.encryptedKey;
+    newFile.encryptedMetadata = body.encryptedMetadata;
     newFile.type = NodeType.FILE;
-    newFile.ref = dto.ref;
-    newFile.encryptedParentKey = dto.encryptedParentKey;
-    newFile.owner = dto.user;
+    newFile.ref = body.ref;
+    newFile.encryptedParentKey = body.encryptedParentKey;
+    newFile.owner = curUser;
     newFile.parent = await this.findOne({
       where: {
-        id: dto.parentId,
+        id: body.parentId,
         type: NodeType.FOLDER,
       },
     });
-    UploadsManager.moveFileFromTmpToPermanent(dto.ref);
+    moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
   }
 
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(dto: CreateFolderDto) {
+  async createFolder(curUser: User, body: CreateFolderDto) {
     const newFolder = new Node();
-    newFolder.iv = dto.iv;
-    newFolder.tag = dto.tag;
-    newFolder.encryptedKey = dto.encryptedKey;
-    newFolder.encryptedMetadata = dto.encryptedMetadata;
+    newFolder.iv = body.iv;
+    newFolder.tag = body.tag;
+    newFolder.encryptedKey = body.encryptedKey;
+    newFolder.encryptedMetadata = body.encryptedMetadata;
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
-    newFolder.encryptedParentKey = dto.encryptedParentKey;
-    newFolder.owner = dto.user;
+    newFolder.encryptedParentKey = body.encryptedParentKey;
+    newFolder.owner = curUser;
     newFolder.parent = await this.findOne({
       where: {
-        id: dto.parentId,
+        id: body.parentId,
         type: NodeType.FOLDER,
       },
     });
@@ -159,17 +163,17 @@ export class FilesystemService implements OnModuleInit {
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(dto: UpdateRefDto) {
+  async updateRef(nodeId: number, body: UpdateRefDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
         type: NodeType.FILE,
       },
     });
 
-    UploadsManager.moveFileFromTmpToPermanent(dto.newRef); // moving new file to permanent folder
-    UploadsManager.deletePermanentFile(node); // deleting old file
-    node.ref = dto.newRef; // updating file reference (just like overwrite)
+    moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
+    deletePermanentFile(node); // deleting old file
+    node.ref = body.newRef; // updating file reference (just like overwrite)
 
     await this.nodeRepo.save(node);
   }
@@ -177,30 +181,30 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's metadata.
    */
-  async updateMetadata(dto: UpdateMetadataDto) {
+  async updateMetadata(nodeId: number, body: UpdateMetadataDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
-    node.encryptedMetadata = dto.newEncryptedMetadata;
+    node.encryptedMetadata = body.newEncryptedMetadata;
     await this.nodeRepo.save(node);
   }
 
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(dto: UpdateParentDto) {
+  async updateParent(nodeId: number, body: UpdateParentDto) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
 
     // updating parent
     node.parent = await this.findOne({
       where: {
-        id: dto.newParentId,
+        id: body.newParentId,
         type: NodeType.FOLDER,
       },
     });
@@ -211,10 +215,10 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Deletes a node by id and all of its descendant.
    */
-  async delete(dto: GetNodeDto) {
+  async delete(nodeId: number) {
     const node = await this.findOne({
       where: {
-        id: dto.nodeId,
+        id: nodeId,
       },
     });
     const descendants = await this.nodeRepo.findDescendants(node);
@@ -222,12 +226,23 @@ export class FilesystemService implements OnModuleInit {
     // removes the files stored on server disk
     // for the nodes representing a file
     for (const descendant of descendants) {
-      UploadsManager.deletePermanentFile(descendant);
+      deletePermanentFile(descendant);
     }
 
     // removes the target node form database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
+  }
+
+  /**
+   * Returns all the links in relation with a targeted node.
+   */
+  async getLinks(nodeId: number): Promise<Link[]> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['links'],
+    });
+    return node.links;
   }
 
   /**
@@ -238,8 +253,11 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
     });
-    const path = join(process.cwd(), UploadsManager.uploadFolder, node.ref);
-    const file = createReadStream(path);
-    return new StreamableFile(file);
+    const path = join(process.cwd(), DiskFolders.PERM, node.ref);
+    if (existsSync(path)) {
+      const file = createReadStream(path);
+      return new StreamableFile(file);
+    }
+    throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
   }
 }

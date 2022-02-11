@@ -43,7 +43,7 @@ export class Node {
   @Column()
   encryptedParentKey: string;
 
-  @ManyToOne(() => User, (user) => user.nodes, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.nodes)
   owner: User;
 
   @OneToMany(() => Link, (link) => link.node)
