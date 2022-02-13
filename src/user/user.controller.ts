@@ -12,7 +12,7 @@ import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
 import { UserService } from './user.service';
 import { res, ComRes } from '../utils/communication';
 import { Request } from 'express';
-import { getAuthHeader } from '../utils/session';
+import { getSessionId } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -84,7 +84,7 @@ export class UserController {
    */
   @Post('logout')
   async logout(@Req() req: Request) {
-    const sessionId = await getAuthHeader(req);
+    const sessionId = await getSessionId(req);
     await this.userService.terminateSession(sessionId);
     return res('Successfully logged out.', {});
   }

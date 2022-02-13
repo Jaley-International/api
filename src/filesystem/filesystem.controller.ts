@@ -26,7 +26,7 @@ import {
 import { diskStorage } from 'multer';
 import { DiskFolders } from '../utils/uploadsManager';
 import { res, ComRes } from '../utils/communication';
-import { sessionUser } from '../utils/session';
+import { getSessionUser } from '../utils/session';
 
 @Controller('file-system')
 export class FilesystemController {
@@ -75,7 +75,7 @@ export class FilesystemController {
     @Req() req: Request,
     @Body() body: CreateFileDto,
   ): Promise<ComRes> {
-    const curUser = await sessionUser(req);
+    const curUser = await getSessionUser(req);
     await this.fileService.createFile(curUser, body);
     return res('Successfully created new file.', {});
   }
@@ -88,7 +88,7 @@ export class FilesystemController {
     @Req() req: Request,
     @Body() body: CreateFolderDto,
   ): Promise<ComRes> {
-    const curUser = await sessionUser(req);
+    const curUser = await getSessionUser(req);
     await this.fileService.createFolder(curUser, body);
     return res('Successfully created new folder.', {});
   }

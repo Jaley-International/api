@@ -10,24 +10,13 @@ import { err, Status } from './communication';
  * Throws an exception if any of these attempts fails.
  * Returns the found user.
  */
-export async function sessionUser(req: Request): Promise<User> {
+export async function getSessionUser(req: Request): Promise<User> {
   const sessionRepo = getConnection().getRepository(Session);
-  const authHeader = req.header('authorization');
-
-  if (!authHeader) {
-    throw err(
-      Status.ERROR_NO_AUTH_TOKEN,
-      'Header does not contain any authorization field.',
-    );
-  }
-
-  // getting the token from the string
-  const bearerToken = authHeader.split(' ');
-  const token = bearerToken[bearerToken.length - 1];
+  const sessionId = await getSessionId(req);
 
   // getting current session
   const session = await sessionRepo.findOne({
-    where: { id: token, expire: MoreThan(Date.now()) },
+    where: { id: sessionId, expire: MoreThan(Date.now()) },
     relations: ['user'],
   });
   // checking if the session exist and is not expired
@@ -47,15 +36,20 @@ export async function sessionUser(req: Request): Promise<User> {
 }
 
 /**
+ * Gets the authorization header from the request.
+ * Throws an error if it doesn't exist.
  * Returns the authorization header value.
  */
-export async function getAuthHeader(req: Request): Promise<string> {
-  const sessionId = req.header('authorization');
-  if (!sessionId) {
+export async function getSessionId(req: Request): Promise<string> {
+  // getting authorization header
+  const authHeader = req.header('authorization');
+  if (!authHeader) {
     throw err(
       Status.ERROR_NO_AUTH_TOKEN,
       'Header does not contain any authorization field.',
     );
   }
-  return sessionId;
+  // getting the session id from the string
+  const bearerToken = authHeader.split(' ');
+  return bearerToken[bearerToken.length - 1];
 }
