@@ -27,7 +27,7 @@ export async function sessionUser(req: Request): Promise<User> {
 
   // getting current session
   const session = await sessionRepo.findOne({
-    where: { token: token, expire: MoreThan(Date.now()) },
+    where: { id: token, expire: MoreThan(Date.now()) },
     relations: ['user'],
   });
   // checking if the session exist and is not expired
@@ -44,4 +44,18 @@ export async function sessionUser(req: Request): Promise<User> {
 
   // returning the user
   return session.user;
+}
+
+/**
+ * Returns the authorization header value.
+ */
+export async function getAuthHeader(req: Request): Promise<string> {
+  const sessionId = req.header('authorization');
+  if (!sessionId) {
+    throw err(
+      Status.ERROR_NO_AUTH_TOKEN,
+      'Header does not contain any authorization field.',
+    );
+  }
+  return sessionId;
 }

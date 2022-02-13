@@ -46,7 +46,7 @@ export class User {
 @Entity()
 export class Session {
   @PrimaryColumn()
-  token: string;
+  id: string;
 
   @Column({ type: 'bigint' })
   expire: number;

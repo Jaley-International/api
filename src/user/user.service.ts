@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, getConnection, Repository } from 'typeorm';
+import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
 import { Session, User } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
@@ -135,7 +135,7 @@ export class UserService {
       if (key === user.hashedAuthenticationKey) {
         // new session
         const session = new Session();
-        session.token = generateSessionIdentifier();
+        session.id = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
           Date.now() +
@@ -151,13 +151,31 @@ export class UserService {
           rsaPublicSharingKey: user.rsaPublicSharingKey,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
-            session.token,
+            session.id,
           ),
           sessionExpire: session.expire,
         };
       }
     }
     throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
+  }
+
+  /**
+   * Sets the expiration of the session to be the current datetime.
+   */
+  async terminateSession(sessionId: string) {
+    const now = Date.now();
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId, expire: MoreThan(now) },
+    });
+    if (!session) {
+      throw err(
+        Status.ERROR_INVALID_SESSION,
+        "Session expired or doesn't exist.",
+      );
+    }
+    session.expire = now;
+    await this.sessionRepo.save(session);
   }
 
   private async mailExists(email: string): Promise<boolean> {

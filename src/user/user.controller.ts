@@ -6,10 +6,13 @@ import {
   Param,
   Patch,
   Post,
+  Req,
 } from '@nestjs/common';
 import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
 import { UserService } from './user.service';
 import { res, ComRes } from '../utils/communication';
+import { Request } from 'express';
+import { getAuthHeader } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -74,5 +77,15 @@ export class UserController {
   async delete(@Param('username') username: string): Promise<ComRes> {
     const user = await this.userService.delete(username);
     return res('Successfully deleted user.', { user: user });
+  }
+
+  /**
+   * Ends the current user session.
+   */
+  @Post('logout')
+  async logout(@Req() req: Request) {
+    const sessionId = await getAuthHeader(req);
+    await this.userService.terminateSession(sessionId);
+    return res('Successfully logged out.', {});
   }
 }
