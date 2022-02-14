@@ -29,6 +29,14 @@ export class UserService {
     private sessionRepo: Repository<Session>,
   ) {}
 
+  private async mailExists(email: string): Promise<boolean> {
+    return !!(await this.userRepo.findOne({ email }));
+  }
+
+  private async userExists(username: string): Promise<boolean> {
+    return !!(await this.userRepo.findOne({ username }));
+  }
+
   /**
    * Returns all existing users.
    */
@@ -46,6 +54,18 @@ export class UserService {
       throw err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
     return user;
+  }
+
+  /**
+   * Basic findOne funciton on Session repository,
+   * but throws an error when no session is found;
+   */
+  async findOneSession(options: FindOneOptions<Session>): Promise<Session> {
+    const session = await this.sessionRepo.findOne(options);
+    if (!session) {
+      throw err(Status.ERROR_INVALID_SESSION, 'Session not found.');
+    }
+    return session;
   }
 
   /**
@@ -163,26 +183,29 @@ export class UserService {
   /**
    * Sets the expiration of the session to be the current datetime.
    */
-  async terminateSession(sessionId: string) {
+  async terminateSession(sessionId: string): Promise<void> {
     const now = Date.now();
-    const session = await this.sessionRepo.findOne({
+
+    const session = await this.findOneSession({
       where: { id: sessionId, expire: MoreThan(now) },
     });
-    if (!session) {
-      throw err(
-        Status.ERROR_INVALID_SESSION,
-        "Session expired or doesn't exist.",
-      );
-    }
+
     session.expire = now;
+
     await this.sessionRepo.save(session);
   }
 
-  private async mailExists(email: string): Promise<boolean> {
-    return !!(await this.userRepo.findOne({ email }));
-  }
-
-  private async userExists(username: string): Promise<boolean> {
-    return !!(await this.userRepo.findOne({ username }));
+  /**
+   * Extends the duration of the target session if it's about to be expired.
+   * Returns true if the session has been extended.
+   */
+  async extendSession(sessionId: string): Promise<void> {
+    const now = Date.now();
+    const session = await this.findOneSession({
+      where: { id: sessionId, expire: MoreThan(now) },
+    });
+    session.expire =
+      now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
+    await this.sessionRepo.save(session);
   }
 }

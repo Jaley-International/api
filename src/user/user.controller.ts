@@ -50,7 +50,7 @@ export class UserController {
    * Authenticate a user.
    * Returns to client its login information.
    */
-  @Post('/login')
+  @Post('login')
   async login(@Body() body: AuthenticationDto): Promise<ComRes> {
     const loginDetails = await this.userService.login(body);
     return res('Successfully logged in.', { loginDetails: loginDetails });
@@ -87,5 +87,15 @@ export class UserController {
     const sessionId = await getSessionId(req);
     await this.userService.terminateSession(sessionId);
     return res('Successfully logged out.', {});
+  }
+
+  /**
+   * Extends current session duration.
+   */
+  @Post('session/extend')
+  async extendSession(@Req() req: Request) {
+    const sessionId = await getSessionId(req);
+    await this.userService.extendSession(sessionId);
+    return res('Successfully extended session duration', {});
   }
 }
