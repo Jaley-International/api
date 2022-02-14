@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
 import { UserService } from './user.service';
-import { res, ComRes } from '../utils/communication';
+import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
 import { getSessionId } from '../utils/session';
 
@@ -22,7 +22,7 @@ export class UserController {
    * Gets all existing users.
    */
   @Get()
-  async findAll(): Promise<ComRes> {
+  async findAll(): Promise<ResBody> {
     const users = await this.userService.findAll();
     return res('Successfully got all users.', { users: users });
   }
@@ -31,7 +31,7 @@ export class UserController {
    * Returns to client the target user's salt.
    */
   @Get(':username/salt')
-  async getSalt(@Param('username') username: string): Promise<ComRes> {
+  async getSalt(@Param('username') username: string): Promise<ResBody> {
     const salt = await this.userService.getSalt(username);
     return res('Successfully got salt.', { salt: salt });
   }
@@ -41,7 +41,7 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post()
-  async create(@Body() body: CreateUserDto): Promise<ComRes> {
+  async create(@Body() body: CreateUserDto): Promise<ResBody> {
     const user = await this.userService.create(body);
     return res('Successfully created a new user account.', { user: user });
   }
@@ -51,7 +51,7 @@ export class UserController {
    * Returns to client its login information.
    */
   @Post('login')
-  async login(@Body() body: AuthenticationDto): Promise<ComRes> {
+  async login(@Body() body: AuthenticationDto): Promise<ResBody> {
     const loginDetails = await this.userService.login(body);
     return res('Successfully logged in.', { loginDetails: loginDetails });
   }
@@ -64,7 +64,7 @@ export class UserController {
   async update(
     @Param('username') username: string,
     @Body() body: UpdateUserDto,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     const user = await this.userService.update(username, body);
     return res('Successfully updated user account data.', { user: user });
   }
@@ -74,7 +74,7 @@ export class UserController {
    * Returns to client the deleted user.
    */
   @Delete(':username')
-  async delete(@Param('username') username: string): Promise<ComRes> {
+  async delete(@Param('username') username: string): Promise<ResBody> {
     const user = await this.userService.delete(username);
     return res('Successfully deleted user.', { user: user });
   }

@@ -14,7 +14,7 @@ export enum Status {
   ERROR_LINK_NOT_FOUND = 'ERROR_LINK_NOT_FOUND',
 }
 
-export interface ComRes {
+export interface ResBody {
   status: Status;
   verbose: string;
   data: object;
@@ -24,7 +24,7 @@ export interface ComRes {
  * Returns an object representing a response body.
  * This is meant to be returned in a controller as a response.
  */
-export function res(verbose: string, data: object): ComRes {
+export function res(verbose: string, data: object): ResBody {
   return { status: Status.SUCCESS, verbose: verbose, data: data };
 }
 
