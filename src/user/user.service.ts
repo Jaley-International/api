@@ -197,9 +197,9 @@ export class UserService {
 
   /**
    * Extends the duration of the target session if it's about to be expired.
-   * Returns true if the session has been extended.
+   * Returns the new expiration date time of the session.
    */
-  async extendSession(sessionId: string): Promise<void> {
+  async extendSession(sessionId: string): Promise<number> {
     const now = Date.now();
     const session = await this.findOneSession({
       where: { id: sessionId, expire: MoreThan(now) },
@@ -207,5 +207,6 @@ export class UserService {
     session.expire =
       now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
     await this.sessionRepo.save(session);
+    return session.expire;
   }
 }

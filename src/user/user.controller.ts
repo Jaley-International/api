@@ -95,7 +95,9 @@ export class UserController {
   @Post('session/extend')
   async extendSession(@Req() req: Request) {
     const sessionId = await getSessionId(req);
-    await this.userService.extendSession(sessionId);
-    return res('Successfully extended session duration', {});
+    const newExpiration = await this.userService.extendSession(sessionId);
+    return res('Successfully extended session duration', {
+      expire: newExpiration,
+    });
   }
 }
