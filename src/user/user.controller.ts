@@ -28,6 +28,17 @@ export class UserController {
   }
 
   /**
+   * Gets the target user.
+   */
+  @Get(':username')
+  async find(@Param('username') username: string): Promise<ResBody> {
+    const user = await this.userService.findOne({
+      where: { username: username },
+    });
+    return res('Successfully got user.', { user: user });
+  }
+
+  /**
    * Returns to client the target user's salt.
    */
   @Get(':username/salt')
