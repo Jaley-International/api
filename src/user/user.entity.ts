@@ -8,6 +8,12 @@ import {
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
 
+export enum AccessLevel {
+  ADMINISTRATOR = 'ADMINISTRATOR',
+  USER = 'USER',
+  GUEST = 'GUEST',
+}
+
 @Entity()
 export class User {
   @PrimaryColumn()
@@ -20,6 +26,21 @@ export class User {
   emailToLowercase() {
     this.email = this.email.toLocaleLowerCase();
   }
+
+  @Column()
+  firstName: string;
+
+  @Column()
+  lastName: string;
+
+  @Column()
+  group: string;
+
+  @Column()
+  job: string;
+
+  @Column({ type: 'enum', enum: AccessLevel })
+  accessLevel: AccessLevel;
 
   @Column()
   clientRandomValue: string;
