@@ -8,12 +8,12 @@ import { join } from 'path';
   imports: [
     MailerModule.forRoot({
       transport: {
-        host: '',
+        host: process.env.PEC_API_HOST,
         port: 465,
         secure: true,
         auth: {
-          user: '',
-          pass: '',
+          user: process.env.PEC_API_USER_EMAIL,
+          pass: process.env.PEC_API_USER_PASSWORD,
         },
       },
       defaults: {
