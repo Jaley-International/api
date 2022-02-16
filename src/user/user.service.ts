@@ -226,8 +226,7 @@ export class UserService {
    * Creates a new user from pre registration as an admin.
    * Throws an exception if the email or username is already used.
    */
-  async register(req: Request, body: RegisterUserDto): Promise<User> {
-    const curUser = await getSessionUser(req);
+  async register(curUser: User, body: RegisterUserDto): Promise<User> {
     if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
       if (!(await this.userExists(body.username))) {
         if (!(await this.mailExists(body.email))) {

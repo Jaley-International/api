@@ -17,7 +17,7 @@ import {
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import { getSessionId } from '../utils/session';
+import { getSessionId, getSessionUser } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -126,7 +126,8 @@ export class UserController {
     @Req() req: Request,
     @Body() body: RegisterUserDto,
   ): Promise<ResBody> {
-    const user = await this.userService.register(req, body);
+    const curUser = await getSessionUser(req);
+    const user = await this.userService.register(curUser, body);
     return res('Successfully created a new user account.', { user: user });
   }
 }
