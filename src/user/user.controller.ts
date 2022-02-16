@@ -8,7 +8,12 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
+import {
+  AuthenticationDto,
+  CreateUserDto,
+  RegisterUserDto,
+  UpdateUserDto,
+} from './user.dto';
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
@@ -110,5 +115,18 @@ export class UserController {
     return res('Successfully extended session duration', {
       expire: newExpiration,
     });
+  }
+
+  /**
+   * Creates a new user as an admin.
+   * Returns to client the newly created user.
+   */
+  @Post()
+  async register(
+    @Req() req: Request,
+    @Body() body: RegisterUserDto,
+  ): Promise<ResBody> {
+    const user = await this.userService.register(req, body);
+    return res('Successfully created a new user account.', { user: user });
   }
 }

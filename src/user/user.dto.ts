@@ -1,5 +1,6 @@
-import { IsDefined, IsEmail, IsString, Matches } from 'class-validator';
+import { IsDefined, IsEmail, IsEnum, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { AccessLevel } from './user.entity';
 
 export class AuthenticationDto {
   @ApiProperty()
@@ -50,6 +51,48 @@ export class CreateUserDto {
   @IsDefined()
   @IsString()
   rsaPublicSharingKey: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsEmail()
+  email: string;
+}
+
+export class RegisterUserDto {
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  username: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  firstName: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  lastName: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  group: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsEnum(AccessLevel)
+  accessLevel: AccessLevel;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
+  job: string;
 
   @ApiProperty()
   @IsDefined()

@@ -13,6 +13,7 @@ import { FilesystemController } from '../filesystem/filesystem.controller';
 import { UserController } from '../user/user.controller';
 import { LinkModule } from '../link/link.module';
 import { LinkController } from '../link/link.controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LinkController } from '../link/link.controller';
     UserModule,
     FilesystemModule,
     LinkModule,
+    MailModule,
   ],
 })
 export class AppModule implements NestModule {

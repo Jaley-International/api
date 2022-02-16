@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
-import { Session, User } from './user.entity';
+import { AccessLevel, Session, User } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
   CreateUserDto,
   LoginDetails,
+  RegisterUserDto,
   UpdateUserDto,
 } from './user.dto';
 import {
   addPadding,
   generateSessionIdentifier,
+  hexToBase64Url,
   INSTANCE_ID,
   rsaPublicEncrypt,
   SERVER_RANDOM_VALUE,
@@ -19,6 +21,10 @@ import {
   sha512,
 } from 'src/utils/security';
 import { err, Status } from '../utils/communication';
+import { MailService } from '../mail/mail.service';
+import { getSessionUser } from '../utils/session';
+import { Request } from 'express';
+import forge from 'node-forge';
 
 @Injectable()
 export class UserService {
@@ -27,6 +33,7 @@ export class UserService {
     private userRepo: Repository<User>,
     @InjectRepository(Session)
     private sessionRepo: Repository<Session>,
+    private mailService: MailService,
   ) {}
 
   private async mailExists(email: string): Promise<boolean> {
@@ -208,5 +215,49 @@ export class UserService {
       now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
     await this.sessionRepo.save(session);
     return session.expire;
+  }
+
+  async testEmail() {
+    const user = new User();
+    await this.mailService.sendUserConfirmation(user, 'testing');
+  }
+
+  /**
+   * Creates a new user from pre registration as an admin.
+   * Throws an exception if the email or username is already used.
+   */
+  async register(req: Request, body: RegisterUserDto): Promise<User> {
+    const curUser = await getSessionUser(req);
+    if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
+      if (!(await this.userExists(body.username))) {
+        if (!(await this.mailExists(body.email))) {
+          const newUser = new User();
+          newUser.username = body.username;
+          newUser.email = body.email;
+          newUser.accessLevel = body.accessLevel;
+          newUser.firstName = body.firstName;
+          newUser.lastName = body.lastName;
+          newUser.group = body.group;
+          newUser.job = body.job;
+          const registerKey = hexToBase64Url(
+            forge.util.bytesToHex(forge.random.getBytesSync(12)),
+          );
+          await this.mailService.sendUserConfirmation(newUser, registerKey);
+          return await this.userRepo.save(newUser);
+        } else {
+          throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+        }
+      } else {
+        throw err(
+          Status.ERROR_USERNAME_ALREADY_USED,
+          'Username already in use.',
+        );
+      }
+    } else {
+      throw err(
+        Status.ERROR_INVALID_ACCESS_LEVEL,
+        'User Access Level is not Administrator',
+      );
+    }
   }
 }
