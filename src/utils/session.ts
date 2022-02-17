@@ -8,7 +8,7 @@ import { err, Status } from './communication';
  * Throws an error if it doesn't exist.
  * Returns the authorization header value.
  */
-export async function getSessionId(req: Request): Promise<string> {
+export async function getHeaderSessionId(req: Request): Promise<string> {
   // getting authorization header
   const authHeader = req.header('authorization');
   if (!authHeader) {
@@ -53,7 +53,7 @@ async function getValidSession(sessionId: string): Promise<Session> {
  * Returns a session associated user.
  */
 export async function getSessionUser(req: Request): Promise<User> {
-  const sessionId = await getSessionId(req);
+  const sessionId = await getHeaderSessionId(req);
   const session = await getValidSession(sessionId);
   return session.user;
 }

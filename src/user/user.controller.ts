@@ -12,7 +12,7 @@ import { AuthenticationDto, CreateUserDto, UpdateUserDto } from './user.dto';
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import { getSessionId } from '../utils/session';
+import { getHeaderSessionId } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -95,7 +95,7 @@ export class UserController {
    */
   @Post('logout')
   async logout(@Req() req: Request) {
-    const sessionId = await getSessionId(req);
+    const sessionId = await getHeaderSessionId(req);
     await this.userService.terminateSession(sessionId);
     return res('Successfully logged out.', {});
   }
@@ -105,7 +105,7 @@ export class UserController {
    */
   @Post('session/extend')
   async extendSession(@Req() req: Request) {
-    const sessionId = await getSessionId(req);
+    const sessionId = await getHeaderSessionId(req);
     const newExpiration = await this.userService.extendSession(sessionId);
     return res('Successfully extended session duration', {
       expire: newExpiration,
