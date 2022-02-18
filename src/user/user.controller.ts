@@ -46,9 +46,9 @@ export class UserController {
   /**
    * Returns to client the target user's salt.
    */
-  @Get(':registerKey/salt')
-  async getSalt(@Param('registerKey') registerKey: string): Promise<ResBody> {
-    const salt = await this.userService.getSalt(registerKey);
+  @Get(':username/salt')
+  async getSalt(@Param('username') username: string): Promise<ResBody> {
+    const salt = await this.userService.getSalt(username);
     return res('Successfully got salt.', { salt: salt });
   }
 
