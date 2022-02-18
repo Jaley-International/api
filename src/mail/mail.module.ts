@@ -3,17 +3,19 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { Module } from '@nestjs/common';
 import { MailService } from './mail.service';
 import { join } from 'path';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     MailerModule.forRoot({
       transport: {
-        host: process.env.PEC_API_HOST,
+        host: process.env.PEC_API_MAIL_SERVER,
         port: 465,
         secure: true,
         auth: {
-          user: process.env.PEC_API_USER_EMAIL,
-          pass: process.env.PEC_API_USER_PASSWORD,
+          user: process.env.PEC_API_MAIL_ADDRESS,
+          pass: process.env.PEC_API_MAIL_PASSWORD,
         },
       },
       defaults: {
