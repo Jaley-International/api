@@ -13,6 +13,7 @@ import { FilesystemController } from '../filesystem/filesystem.controller';
 import { UserController } from '../user/user.controller';
 import { LinkModule } from '../link/link.module';
 import { LinkController } from '../link/link.controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LinkController } from '../link/link.controller';
     UserModule,
     FilesystemModule,
     LinkModule,
+    MailModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -34,11 +36,9 @@ export class AppModule implements NestModule {
     consumer
       .apply(sessionValidator)
       .exclude(
-        { path: 'api/users', method: RequestMethod.GET },
-        { path: 'api/users', method: RequestMethod.POST },
+        { path: 'api/users/register', method: RequestMethod.POST },
         { path: 'api/users/login', method: RequestMethod.POST },
         { path: 'api/users/(.*)/salt', method: RequestMethod.GET },
-        { path: 'api/file-system', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
   }

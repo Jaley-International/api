@@ -25,8 +25,8 @@ import {
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
 import { DiskFolders } from '../utils/uploadsManager';
-import { res, ComRes } from '../utils/communication';
-import { sessionUser } from '../utils/session';
+import { res, ResBody } from '../utils/communication';
+import { getSessionUser } from '../utils/session';
 
 @Controller('file-system')
 export class FilesystemController {
@@ -36,7 +36,7 @@ export class FilesystemController {
    * Returns to client the current file system tree in its entirety.
    */
   @Get()
-  async getFileSystem(): Promise<ComRes> {
+  async getFileSystem(): Promise<ResBody> {
     const filesystem = await this.fileService.getFileSystem();
     return res('Successfully got all file system.', { filesystem: filesystem });
   }
@@ -47,7 +47,7 @@ export class FilesystemController {
   @Get(':nodeId')
   async getFileSystemById(
     @Param('nodeId', ParseIntPipe) nodeId: number,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     const filesystem = await this.fileService.getFileSystem(nodeId);
     return res("Successfully got node's tree", { filesystem: filesystem });
   }
@@ -58,7 +58,7 @@ export class FilesystemController {
   @Get(':nodeId/links')
   async getLinksByNode(
     @Param('nodeId', ParseIntPipe) nodeId: number,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     const links = await this.fileService.getLinks(nodeId);
     return res('Successfully got all node links.', {
       links: links,
@@ -74,8 +74,8 @@ export class FilesystemController {
   async createFile(
     @Req() req: Request,
     @Body() body: CreateFileDto,
-  ): Promise<ComRes> {
-    const curUser = await sessionUser(req);
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
     await this.fileService.createFile(curUser, body);
     return res('Successfully created new file.', {});
   }
@@ -87,8 +87,8 @@ export class FilesystemController {
   async createFolder(
     @Req() req: Request,
     @Body() body: CreateFolderDto,
-  ): Promise<ComRes> {
-    const curUser = await sessionUser(req);
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
     await this.fileService.createFolder(curUser, body);
     return res('Successfully created new folder.', {});
   }
@@ -102,7 +102,7 @@ export class FilesystemController {
   async updateRef(
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateRefDto,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     await this.fileService.updateRef(nodeId, body);
     return res('Successfully overwritten file.', {});
   }
@@ -114,7 +114,7 @@ export class FilesystemController {
   async updateMetadata(
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateMetadataDto,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     await this.fileService.updateMetadata(nodeId, body);
     return res('Successfully updated file metadata.', {});
   }
@@ -126,7 +126,7 @@ export class FilesystemController {
   async updateParent(
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateParentDto,
-  ): Promise<ComRes> {
+  ): Promise<ResBody> {
     await this.fileService.updateParent(nodeId, body);
     return res('Successfully moved file to another parent.', {});
   }
@@ -135,7 +135,9 @@ export class FilesystemController {
    * Deletes a node and all of its descendants.
    */
   @Delete(':nodeId')
-  async delete(@Param('nodeId', ParseIntPipe) nodeId: number): Promise<ComRes> {
+  async delete(
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+  ): Promise<ResBody> {
     await this.fileService.delete(nodeId);
     return res('Successfully deleted node.', {});
   }
@@ -150,7 +152,7 @@ export class FilesystemController {
       storage: diskStorage({ destination: DiskFolders.TMP }),
     }),
   )
-  uploadFile(@UploadedFile() file: Express.Multer.File): ComRes {
+  uploadFile(@UploadedFile() file: Express.Multer.File): ResBody {
     const ref = this.fileService.uploadFile(file);
     return res('Successfully uploaded file.', { ref: ref });
   }

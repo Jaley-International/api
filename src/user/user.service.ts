@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, getConnection, Repository } from 'typeorm';
-import { Session, User } from './user.entity';
+import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
+import { AccessLevel, Session, User, UserStatus } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
-  CreateUserDto,
   LoginDetails,
+  PreRegisterUserDto,
+  RegisterUserDto,
   UpdateUserDto,
 } from './user.dto';
 import {
   addPadding,
   generateSessionIdentifier,
+  hexToBase64Url,
   INSTANCE_ID,
   rsaPublicEncrypt,
   SERVER_RANDOM_VALUE,
@@ -19,6 +21,8 @@ import {
   sha512,
 } from 'src/utils/security';
 import { err, Status } from '../utils/communication';
+import { MailService } from '../mail/mail.service';
+import forge from 'node-forge';
 
 @Injectable()
 export class UserService {
@@ -27,7 +31,16 @@ export class UserService {
     private userRepo: Repository<User>,
     @InjectRepository(Session)
     private sessionRepo: Repository<Session>,
+    private mailService: MailService,
   ) {}
+
+  private async mailExists(email: string): Promise<boolean> {
+    return !!(await this.userRepo.findOne({ email }));
+  }
+
+  private async userExists(username: string): Promise<boolean> {
+    return !!(await this.userRepo.findOne({ username }));
+  }
 
   /**
    * Returns all existing users.
@@ -49,27 +62,83 @@ export class UserService {
   }
 
   /**
+   * Basic findOne function on Session repository,
+   * but throws an error when no session is found;
+   */
+  async findOneSession(options: FindOneOptions<Session>): Promise<Session> {
+    const session = await this.sessionRepo.findOne(options);
+    if (!session) {
+      throw err(Status.ERROR_INVALID_SESSION, 'Session not found.');
+    }
+    return session;
+  }
+
+  /**
+   * Pre-registers a new user by an admin user and returns it.
+   * Throws an exception if the email or username is already used.
+   * Throws an exception if the current user is not an admin.
+   */
+  async preregister(curUser: User, body: PreRegisterUserDto): Promise<User> {
+    if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
+      if (!(await this.userExists(body.username))) {
+        if (!(await this.mailExists(body.email))) {
+          const newUser = new User();
+          newUser.username = body.username;
+          newUser.firstName = body.firstName;
+          newUser.lastName = body.lastName;
+          newUser.email = body.email;
+          newUser.group = body.group;
+          newUser.job = body.job;
+          newUser.accessLevel = body.accessLevel;
+          newUser.userStatus = UserStatus.PENDING_REGISTRATION;
+          newUser.registerKey = hexToBase64Url(
+            forge.util.bytesToHex(forge.random.getBytesSync(12)),
+          );
+          await this.mailService.sendUserConfirmation(newUser);
+          return await this.userRepo.save(newUser);
+        } else {
+          throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+        }
+      } else {
+        throw err(
+          Status.ERROR_USERNAME_ALREADY_USED,
+          'Username already in use.',
+        );
+      }
+    } else {
+      throw err(
+        Status.ERROR_INVALID_ACCESS_LEVEL,
+        'User Access Level is not Administrator.',
+      );
+    }
+  }
+
+  /**
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async create(body: CreateUserDto): Promise<User> {
-    if (!(await this.userExists(body.username))) {
-      if (!(await this.mailExists(body.email))) {
-        const newUser = new User();
-        newUser.username = body.username;
-        newUser.clientRandomValue = body.clientRandomValue;
-        newUser.encryptedMasterKey = body.encryptedMasterKey;
-        newUser.hashedAuthenticationKey = body.hashedAuthenticationKey;
-        newUser.encryptedRsaPrivateSharingKey =
+  async register(body: RegisterUserDto): Promise<User> {
+    const curUser = await this.userRepo.findOne({
+      where: { registerKey: body.registerKey },
+    });
+    if (curUser) {
+      if (curUser.userStatus === UserStatus.PENDING_REGISTRATION) {
+        curUser.clientRandomValue = body.clientRandomValue;
+        curUser.encryptedMasterKey = body.encryptedMasterKey;
+        curUser.hashedAuthenticationKey = body.hashedAuthenticationKey;
+        curUser.encryptedRsaPrivateSharingKey =
           body.encryptedRsaPrivateSharingKey;
-        newUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
-        newUser.email = body.email;
-        return await this.userRepo.save(newUser);
+        curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
+        curUser.userStatus = UserStatus.OK;
+        return await this.userRepo.save(curUser);
       } else {
-        throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+        throw err(
+          Status.ERROR_INVALID_USER_STATUS,
+          'User has already been registered or is suspended.',
+        );
       }
     } else {
-      throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
+      throw err(Status.ERROR_INVALID_REGISTER_KEY, 'Register key is invalid.');
     }
   }
 
@@ -109,10 +178,12 @@ export class UserService {
    * If the corresponding user does not exist, the random value is generated by the server.
    */
   async getSalt(username: string): Promise<string> {
-    const user = await this.userRepo.findOne({ where: { username: username } });
+    const user = await this.userRepo.findOne({
+      where: { username: username },
+    });
     return sha256(
       addPadding(
-        username +
+        (user ? user.registerKey : username) +
           INSTANCE_ID +
           (user ? user.clientRandomValue : SERVER_RANDOM_VALUE),
         128,
@@ -135,7 +206,7 @@ export class UserService {
       if (key === user.hashedAuthenticationKey) {
         // new session
         const session = new Session();
-        session.token = generateSessionIdentifier();
+        session.id = generateSessionIdentifier();
         session.issuedAt = Date.now();
         session.expire =
           Date.now() +
@@ -151,7 +222,7 @@ export class UserService {
           rsaPublicSharingKey: user.rsaPublicSharingKey,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
-            session.token,
+            session.id,
           ),
           sessionExpire: session.expire,
         };
@@ -160,11 +231,33 @@ export class UserService {
     throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
   }
 
-  private async mailExists(email: string): Promise<boolean> {
-    return !!(await this.userRepo.findOne({ email }));
+  /**
+   * Sets the expiration of the session to be the current datetime.
+   */
+  async terminateSession(sessionId: string): Promise<void> {
+    const now = Date.now();
+
+    const session = await this.findOneSession({
+      where: { id: sessionId, expire: MoreThan(now) },
+    });
+
+    session.expire = now;
+
+    await this.sessionRepo.save(session);
   }
 
-  private async userExists(username: string): Promise<boolean> {
-    return !!(await this.userRepo.findOne({ username }));
+  /**
+   * Extends the duration of the target session if it's about to be expired.
+   * Returns the new expiration date time of the session.
+   */
+  async extendSession(sessionId: string): Promise<number> {
+    const now = Date.now();
+    const session = await this.findOneSession({
+      where: { id: sessionId, expire: MoreThan(now) },
+    });
+    session.expire =
+      now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
+    await this.sessionRepo.save(session);
+    return session.expire;
   }
 }
