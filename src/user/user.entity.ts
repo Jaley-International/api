@@ -14,6 +14,12 @@ export enum AccessLevel {
   GUEST = 'GUEST',
 }
 
+export enum UserStatus {
+  OK = 'OK',
+  PENDING_REGISTRATION = 'PENDING_REGISTRATION',
+  SUSPENDED = 'SUSPENDED',
+}
+
 @Entity()
 export class User {
   @PrimaryColumn()
@@ -41,6 +47,12 @@ export class User {
 
   @Column({ type: 'enum', enum: AccessLevel })
   accessLevel: AccessLevel;
+
+  @Column({ type: 'enum', enum: UserStatus })
+  userStatus: UserStatus;
+
+  @Column()
+  registerKey: string;
 
   @Column()
   clientRandomValue: string;
