@@ -118,16 +118,16 @@ export class UserController {
   }
 
   /**
-   * Creates a new user as an admin.
-   * Returns to client the newly created user.
+   * Pre-registers a new user by an admin user.
+   * Returns to client the newly pre-registered user.
    */
-  @Post()
+  @Post('register')
   async register(
     @Req() req: Request,
     @Body() body: RegisterUserDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const user = await this.userService.register(curUser, body);
-    return res('Successfully created a new user account.', { user: user });
+    return res('Successfully pre-registered a new user.', { user: user });
   }
 }

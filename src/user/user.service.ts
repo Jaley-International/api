@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
-import { AccessLevel, Session, User } from './user.entity';
+import { AccessLevel, Session, User, UserStatus } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
@@ -22,8 +22,6 @@ import {
 } from 'src/utils/security';
 import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
-import { getSessionUser } from '../utils/session';
-import { Request } from 'express';
 import forge from 'node-forge';
 
 @Injectable()
@@ -64,7 +62,7 @@ export class UserService {
   }
 
   /**
-   * Basic findOne funciton on Session repository,
+   * Basic findOne function on Session repository,
    * but throws an error when no session is found;
    */
   async findOneSession(options: FindOneOptions<Session>): Promise<Session> {
@@ -217,14 +215,10 @@ export class UserService {
     return session.expire;
   }
 
-  async testEmail() {
-    const user = new User();
-    await this.mailService.sendUserConfirmation(user, 'testing');
-  }
-
   /**
-   * Creates a new user from pre registration as an admin.
+   * Pre-registers a new user by an admin user and returns it.
    * Throws an exception if the email or username is already used.
+   * Throws an exception if the current user is not an admin.
    */
   async register(curUser: User, body: RegisterUserDto): Promise<User> {
     if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
@@ -232,16 +226,18 @@ export class UserService {
         if (!(await this.mailExists(body.email))) {
           const newUser = new User();
           newUser.username = body.username;
-          newUser.email = body.email;
-          newUser.accessLevel = body.accessLevel;
           newUser.firstName = body.firstName;
           newUser.lastName = body.lastName;
+          newUser.email = body.email;
           newUser.group = body.group;
           newUser.job = body.job;
+          newUser.accessLevel = body.accessLevel;
+          newUser.userStatus = UserStatus.PENDING_REGISTRATION;
           const registerKey = hexToBase64Url(
             forge.util.bytesToHex(forge.random.getBytesSync(12)),
           );
-          await this.mailService.sendUserConfirmation(newUser, registerKey);
+          newUser.registerKey = registerKey;
+          await this.mailService.sendUserConfirmation(newUser);
           return await this.userRepo.save(newUser);
         } else {
           throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
