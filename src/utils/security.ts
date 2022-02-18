@@ -43,3 +43,14 @@ export function rsaPublicEncrypt(key: string, value: Hex): Hex {
   const publicKey = forge.pki.publicKeyFromPem(key);
   return forge.util.bytesToHex(publicKey.encrypt(forge.util.hexToBytes(value)));
 }
+
+/**
+ * Converts a hexadecimal string to a base64 url encoded string
+ */
+export function hexToBase64Url(hex: Hex): string {
+  return Buffer.from(hex, 'hex')
+    .toString('base64')
+    .replace(/\//g, '-')
+    .replace(/\+/g, '_')
+    .replace('=', '');
+}
