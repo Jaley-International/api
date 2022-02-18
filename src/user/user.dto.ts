@@ -16,14 +16,7 @@ export class AuthenticationDto {
   derivedAuthenticationKey: string;
 }
 
-// TODO remove in the future as it is replaced by RegisterUserDto
-export class CreateUserDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @Matches(/^[0-9a-zA-Z-]{3,16}$/)
-  username: string;
-
+export class RegisterUserDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
@@ -55,11 +48,11 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsEmail()
-  email: string;
+  @IsString()
+  registerKey: string;
 }
 
-export class RegisterUserDto {
+export class PreRegisterUserDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
