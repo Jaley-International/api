@@ -52,6 +52,7 @@ export class UserController {
     return res('Successfully got salt.', { salt: salt });
   }
 
+  // TODO remove in the future as it is replaced by register
   /**
    * Creates a new user.
    * Returns to client the newly created user.
@@ -60,6 +61,20 @@ export class UserController {
   async create(@Body() body: CreateUserDto): Promise<ResBody> {
     const user = await this.userService.create(body);
     return res('Successfully created a new user account.', { user: user });
+  }
+
+  /**
+   * Pre-registers a new user by an admin user.
+   * Returns to client the newly pre-registered user.
+   */
+  @Post('register')
+  async register(
+    @Req() req: Request,
+    @Body() body: RegisterUserDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const user = await this.userService.register(curUser, body);
+    return res('Successfully pre-registered a new user.', { user: user });
   }
 
   /**
@@ -115,19 +130,5 @@ export class UserController {
     return res('Successfully extended session duration', {
       expire: newExpiration,
     });
-  }
-
-  /**
-   * Pre-registers a new user by an admin user.
-   * Returns to client the newly pre-registered user.
-   */
-  @Post('register')
-  async register(
-    @Req() req: Request,
-    @Body() body: RegisterUserDto,
-  ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const user = await this.userService.register(curUser, body);
-    return res('Successfully pre-registered a new user.', { user: user });
   }
 }

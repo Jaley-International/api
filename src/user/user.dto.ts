@@ -16,6 +16,7 @@ export class AuthenticationDto {
   derivedAuthenticationKey: string;
 }
 
+// TODO remove in the future as it is replaced by RegisterUserDto
 export class CreateUserDto {
   @ApiProperty()
   @IsDefined()

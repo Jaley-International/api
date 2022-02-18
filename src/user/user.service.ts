@@ -73,6 +73,7 @@ export class UserService {
     return session;
   }
 
+  // TODO remove in the future as it is replaced by register
   /**
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
@@ -95,6 +96,46 @@ export class UserService {
       }
     } else {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
+    }
+  }
+
+  /**
+   * Pre-registers a new user by an admin user and returns it.
+   * Throws an exception if the email or username is already used.
+   * Throws an exception if the current user is not an admin.
+   */
+  async register(curUser: User, body: RegisterUserDto): Promise<User> {
+    if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
+      if (!(await this.userExists(body.username))) {
+        if (!(await this.mailExists(body.email))) {
+          const newUser = new User();
+          newUser.username = body.username;
+          newUser.firstName = body.firstName;
+          newUser.lastName = body.lastName;
+          newUser.email = body.email;
+          newUser.group = body.group;
+          newUser.job = body.job;
+          newUser.accessLevel = body.accessLevel;
+          newUser.userStatus = UserStatus.PENDING_REGISTRATION;
+          newUser.registerKey = hexToBase64Url(
+            forge.util.bytesToHex(forge.random.getBytesSync(12)),
+          );
+          await this.mailService.sendUserConfirmation(newUser);
+          return await this.userRepo.save(newUser);
+        } else {
+          throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+        }
+      } else {
+        throw err(
+          Status.ERROR_USERNAME_ALREADY_USED,
+          'Username already in use.',
+        );
+      }
+    } else {
+      throw err(
+        Status.ERROR_INVALID_ACCESS_LEVEL,
+        'User Access Level is not Administrator',
+      );
     }
   }
 
@@ -213,46 +254,5 @@ export class UserService {
       now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
     await this.sessionRepo.save(session);
     return session.expire;
-  }
-
-  /**
-   * Pre-registers a new user by an admin user and returns it.
-   * Throws an exception if the email or username is already used.
-   * Throws an exception if the current user is not an admin.
-   */
-  async register(curUser: User, body: RegisterUserDto): Promise<User> {
-    if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
-      if (!(await this.userExists(body.username))) {
-        if (!(await this.mailExists(body.email))) {
-          const newUser = new User();
-          newUser.username = body.username;
-          newUser.firstName = body.firstName;
-          newUser.lastName = body.lastName;
-          newUser.email = body.email;
-          newUser.group = body.group;
-          newUser.job = body.job;
-          newUser.accessLevel = body.accessLevel;
-          newUser.userStatus = UserStatus.PENDING_REGISTRATION;
-          const registerKey = hexToBase64Url(
-            forge.util.bytesToHex(forge.random.getBytesSync(12)),
-          );
-          newUser.registerKey = registerKey;
-          await this.mailService.sendUserConfirmation(newUser);
-          return await this.userRepo.save(newUser);
-        } else {
-          throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
-        }
-      } else {
-        throw err(
-          Status.ERROR_USERNAME_ALREADY_USED,
-          'Username already in use.',
-        );
-      }
-    } else {
-      throw err(
-        Status.ERROR_INVALID_ACCESS_LEVEL,
-        'User Access Level is not Administrator',
-      );
-    }
   }
 }
