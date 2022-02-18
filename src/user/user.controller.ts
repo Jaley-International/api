@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   AuthenticationDto,
-  CreateUserDto,
+  PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
 } from './user.dto';
@@ -46,35 +46,20 @@ export class UserController {
   /**
    * Returns to client the target user's salt.
    */
-  @Get(':username/salt')
-  async getSalt(@Param('username') username: string): Promise<ResBody> {
-    const salt = await this.userService.getSalt(username);
+  @Get(':registerKey/salt')
+  async getSalt(@Param('registerKey') registerKey: string): Promise<ResBody> {
+    const salt = await this.userService.getSalt(registerKey);
     return res('Successfully got salt.', { salt: salt });
   }
 
-  // TODO remove in the future as it is replaced by register
   /**
-   * Creates a new user.
+   * register a user.
    * Returns to client the newly created user.
    */
   @Post()
-  async create(@Body() body: CreateUserDto): Promise<ResBody> {
-    const user = await this.userService.create(body);
-    return res('Successfully created a new user account.', { user: user });
-  }
-
-  /**
-   * Pre-registers a new user by an admin user.
-   * Returns to client the newly pre-registered user.
-   */
-  @Post('register')
-  async register(
-    @Req() req: Request,
-    @Body() body: RegisterUserDto,
-  ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const user = await this.userService.register(curUser, body);
-    return res('Successfully pre-registered a new user.', { user: user });
+  async register(@Body() body: RegisterUserDto): Promise<ResBody> {
+    const user = await this.userService.register(body);
+    return res('Successfully register a new user account.', { user: user });
   }
 
   /**
@@ -130,5 +115,19 @@ export class UserController {
     return res('Successfully extended session duration', {
       expire: newExpiration,
     });
+  }
+
+  /**
+   * Pre-registers a new user by an admin user.
+   * Returns to client the newly pre-registered user.
+   */
+  @Post('preregister')
+  async preregister(
+    @Req() req: Request,
+    @Body() body: PreRegisterUserDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const user = await this.userService.preregister(curUser, body);
+    return res('Successfully pre-registered a new user.', { user: user });
   }
 }
