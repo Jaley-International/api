@@ -19,7 +19,7 @@ import { ConfigModule } from '@nestjs/config';
         },
       },
       defaults: {
-        from: '"PEC" <noreply@PEC.com>',
+        from: `${process.env.PEC_API_SENDER_NAME} <${process.env.PEC_API_SENDER_EMAIL}>`,
       },
       template: {
         dir: join(__dirname, 'templates'),

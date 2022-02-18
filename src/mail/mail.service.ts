@@ -7,10 +7,11 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendUserConfirmation(user: User) {
-    const url = `https://pec.example.com/auth/register#${user.registerKey}`; // TODO
+    // TODO Change URL
+    const url = `https://pec.example.com/auth/register#${user.registerKey}`;
     await this.mailerService.sendMail({
       to: user.email,
-      subject: 'Welcome to PEC! Confirm your Email',
+      subject: 'Private Encrypted Cloud - Account Registration',
       template: 'confirmation',
       context: {
         name: user.firstName,

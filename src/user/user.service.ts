@@ -54,7 +54,6 @@ export class UserService {
    * but throws an error when no user is found.
    */
   async findOne(options: FindOneOptions<User>): Promise<User> {
-    console.trace();
     const user = await this.userRepo.findOne(options);
     if (!user) {
       throw err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
