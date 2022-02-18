@@ -53,13 +53,27 @@ export class UserController {
   }
 
   /**
-   * register a user.
-   * Returns to client the newly created user.
+   * Pre-registers a new user by an admin user.
+   * Returns to client the newly pre-registered user.
    */
   @Post()
+  async preregister(
+    @Req() req: Request,
+    @Body() body: PreRegisterUserDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const user = await this.userService.preregister(curUser, body);
+    return res('Successfully pre-registered a new user.', { user: user });
+  }
+
+  /**
+   * Registers a user.
+   * Returns to client the newly created user.
+   */
+  @Post('register')
   async register(@Body() body: RegisterUserDto): Promise<ResBody> {
     const user = await this.userService.register(body);
-    return res('Successfully register a new user account.', { user: user });
+    return res('Successfully created a new user account.', { user: user });
   }
 
   /**
@@ -115,19 +129,5 @@ export class UserController {
     return res('Successfully extended session duration', {
       expire: newExpiration,
     });
-  }
-
-  /**
-   * Pre-registers a new user by an admin user.
-   * Returns to client the newly pre-registered user.
-   */
-  @Post('preregister')
-  async preregister(
-    @Req() req: Request,
-    @Body() body: PreRegisterUserDto,
-  ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const user = await this.userService.preregister(curUser, body);
-    return res('Successfully pre-registered a new user.', { user: user });
   }
 }
