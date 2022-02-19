@@ -5,7 +5,6 @@ import { AccessLevel, Session, User, UserStatus } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
-  LoginDetails,
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
@@ -23,6 +22,14 @@ import {
 import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
 import forge from 'node-forge';
+
+export interface LoginDetails {
+  encryptedMasterKey: string;
+  encryptedRsaPrivateSharingKey: string;
+  rsaPublicSharingKey: string;
+  encryptedSessionIdentifier: string;
+  sessionExpire: number;
+}
 
 @Injectable()
 export class UserService {
@@ -148,8 +155,21 @@ export class UserService {
    */
   async update(username: string, body: UpdateUserDto): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
+
+    if (
+      user.email !== body.email.toLowerCase() &&
+      (await this.mailExists(body.email))
+    ) {
+      throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+    }
+
+    user.firstName = body.firstName;
+    user.lastName = body.lastName;
     user.email = body.email;
-    // ...add other things to update in the future
+    user.group = body.group;
+    user.job = body.job;
+    user.accessLevel = body.accessLevel;
+
     await this.userRepo.save(user);
     return user;
   }
