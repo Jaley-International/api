@@ -120,6 +120,6 @@ export class UpdateUserDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsString()
+  @IsEnum(AccessLevel)
   accessLevel: AccessLevel;
 }
