@@ -28,13 +28,13 @@ export class CreateFolderDto {
   @IsDefined()
   @IsString()
   @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedKey: string;
+  encryptedNodeKey: string;
 
   @ApiProperty()
   @IsDefined()
   @IsString()
   @Matches(/^[0-9a-zA-Z]+$/)
-  encryptedParentKey: string;
+  parentEncryptedKey: string;
 
   @ApiProperty()
   @IsDefined()

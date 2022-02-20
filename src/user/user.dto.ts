@@ -95,14 +95,31 @@ export class PreRegisterUserDto {
 export class UpdateUserDto {
   @ApiProperty()
   @IsDefined()
+  @IsString()
+  firstName: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  lastName: string;
+
+  @ApiProperty()
+  @IsDefined()
   @IsEmail()
   email: string;
-}
 
-export interface LoginDetails {
-  encryptedMasterKey: string;
-  encryptedRsaPrivateSharingKey: string;
-  rsaPublicSharingKey: string;
-  encryptedSessionIdentifier: string;
-  sessionExpire: number;
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  group: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  job: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsEnum(AccessLevel)
+  accessLevel: AccessLevel;
 }

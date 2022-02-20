@@ -54,19 +54,19 @@ export class User {
   @Column()
   registerKey: string;
 
-  @Column()
+  @Column({ nullable: true })
   clientRandomValue: string;
 
-  @Column()
+  @Column({ nullable: true })
   encryptedMasterKey: string;
 
-  @Column()
+  @Column({ nullable: true })
   hashedAuthenticationKey: string;
 
-  @Column({ length: 10000 })
+  @Column({ nullable: true, length: 10000 })
   encryptedRsaPrivateSharingKey: string;
 
-  @Column({ length: 1000 })
+  @Column({ nullable: true, length: 1000 })
   rsaPublicSharingKey: string;
 
   @OneToMany(() => Session, (session) => session.user)

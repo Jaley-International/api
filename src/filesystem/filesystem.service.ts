@@ -41,11 +41,11 @@ export class FilesystemService implements OnModuleInit {
       const newRoot = new Node();
       newRoot.iv = '';
       newRoot.tag = '';
-      newRoot.encryptedKey = '';
+      newRoot.encryptedNodeKey = '';
       newRoot.encryptedMetadata = '';
       newRoot.type = NodeType.FOLDER;
       newRoot.ref = '';
-      newRoot.encryptedParentKey = '';
+      newRoot.parentEncryptedKey = '';
       newRoot.owner = null;
       newRoot.parent = null;
 
@@ -121,11 +121,11 @@ export class FilesystemService implements OnModuleInit {
     const newFile = new Node();
     newFile.iv = body.iv;
     newFile.tag = body.tag;
-    newFile.encryptedKey = body.encryptedKey;
+    newFile.encryptedNodeKey = body.encryptedNodeKey;
     newFile.encryptedMetadata = body.encryptedMetadata;
     newFile.type = NodeType.FILE;
     newFile.ref = body.ref;
-    newFile.encryptedParentKey = body.encryptedParentKey;
+    newFile.parentEncryptedKey = body.parentEncryptedKey;
     newFile.owner = curUser;
     newFile.parent = await this.findOne({
       where: {
@@ -144,11 +144,11 @@ export class FilesystemService implements OnModuleInit {
     const newFolder = new Node();
     newFolder.iv = body.iv;
     newFolder.tag = body.tag;
-    newFolder.encryptedKey = body.encryptedKey;
+    newFolder.encryptedNodeKey = body.encryptedNodeKey;
     newFolder.encryptedMetadata = body.encryptedMetadata;
     newFolder.type = NodeType.FOLDER;
     newFolder.ref = '';
-    newFolder.encryptedParentKey = body.encryptedParentKey;
+    newFolder.parentEncryptedKey = body.parentEncryptedKey;
     newFolder.owner = curUser;
     newFolder.parent = await this.findOne({
       where: {

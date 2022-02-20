@@ -29,7 +29,7 @@ export class Node {
   tag: string;
 
   @Column()
-  encryptedKey: string;
+  encryptedNodeKey: string;
 
   @Column()
   encryptedMetadata: string;
@@ -41,7 +41,7 @@ export class Node {
   ref: string;
 
   @Column()
-  encryptedParentKey: string;
+  parentEncryptedKey: string;
 
   @ManyToOne(() => User, (user) => user.nodes)
   owner: User;
