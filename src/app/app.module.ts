@@ -39,7 +39,7 @@ export class AppModule implements NestModule {
         { path: 'api/users/register', method: RequestMethod.POST },
         { path: 'api/users/login', method: RequestMethod.POST },
         { path: 'api/users/(.*)/salt', method: RequestMethod.GET },
-        { path: '/links/:shareId/node', method: RequestMethod.GET },
+        { path: 'api/links/(.*)/node', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
   }
