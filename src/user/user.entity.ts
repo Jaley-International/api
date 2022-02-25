@@ -9,7 +9,7 @@ import {
 import { Node } from '../filesystem/filesystem.entity';
 
 export enum AccessLevel {
-  ADMINISTRATOR = 'ADMINISTRATOR',
+  ADMINISTRATOR = 'qwertyuiopasdfgh',
   USER = 'USER',
   GUEST = 'GUEST',
 }
