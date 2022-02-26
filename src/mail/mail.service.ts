@@ -7,7 +7,7 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendUserConfirmation(user: User) {
-    const url = `${process.env.PEC_WEB_CLIENT_REGISTER_URL}${user.registerKey}`;
+    const url = `${process.env.PEC_API_CLIENT_URL}/auth/register#${user.registerKey}`;
     await this.mailerService.sendMail({
       to: user.email,
       subject: 'Private Encrypted Cloud - Account Registration',
