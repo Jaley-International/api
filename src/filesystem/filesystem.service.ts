@@ -81,12 +81,18 @@ export class FilesystemService implements OnModuleInit {
    * Returns the descendant tree of the targeted node by id.
    * If no node id is passed in argument, returns the whole filesystem.
    */
-  async getFileSystem(nodeId?: number): Promise<Node> {
+  async getFileSystem(curUser: User, nodeId?: number): Promise<Node> {
     let node: Node;
     if (nodeId) {
       node = await this.findOne({ where: { id: nodeId } });
     } else {
       node = await this.findAll();
+    }
+    if (node.owner !== curUser) {
+      throw err(
+        Status.ERROR_INVALID_NODE_OWNER,
+        'Current user is not the owner of the node.',
+      );
     }
     return await this.nodeRepo.findDescendantsTree(node);
   }

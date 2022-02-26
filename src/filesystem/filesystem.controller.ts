@@ -7,15 +7,15 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   Res,
   StreamableFile,
   UploadedFile,
   UseInterceptors,
-  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
-import { Express, Response, Request } from 'express';
+import { Express, Request, Response } from 'express';
 import {
   CreateFileDto,
   CreateFolderDto,
@@ -36,8 +36,9 @@ export class FilesystemController {
    * Returns to client the current file system tree in its entirety.
    */
   @Get()
-  async getFileSystem(): Promise<ResBody> {
-    const filesystem = await this.fileService.getFileSystem();
+  async getFileSystem(@Req() req: Request): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const filesystem = await this.fileService.getFileSystem(curUser);
     return res('Successfully got all file system.', { filesystem: filesystem });
   }
 
@@ -46,9 +47,11 @@ export class FilesystemController {
    */
   @Get(':nodeId')
   async getFileSystemById(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ResBody> {
-    const filesystem = await this.fileService.getFileSystem(nodeId);
+    const curUser = await getSessionUser(req);
+    const filesystem = await this.fileService.getFileSystem(curUser, nodeId);
     return res("Successfully got node's tree", { filesystem: filesystem });
   }
 
