@@ -54,6 +54,9 @@ export class User {
   @Column()
   registerKey: string;
 
+  @Column({ nullable: true, type: 'bigint' })
+  createdAt: number;
+
   @Column({ nullable: true })
   clientRandomValue: string;
 

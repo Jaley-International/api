@@ -137,6 +137,7 @@ export class UserService {
           body.encryptedRsaPrivateSharingKey;
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.userStatus = UserStatus.OK;
+        curUser.createdAt = Date.now();
         return await this.userRepo.save(curUser);
       } else {
         throw err(
