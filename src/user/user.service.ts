@@ -220,11 +220,10 @@ export class UserService {
    */
   async login(body: AuthenticationDto): Promise<LoginDetails> {
     const user = await this.userRepo.findOne({ username: body.username });
+    const key = sha512(body.derivedAuthenticationKey);
 
-    if (user) {
-      const key = sha512(body.derivedAuthenticationKey);
-
-      if (key === user.hashedAuthenticationKey) {
+    if (user && key === user.hashedAuthenticationKey) {
+      if (user.userStatus === UserStatus.OK) {
         // new session
         const session = new Session();
         session.id = generateSessionIdentifier();
@@ -247,9 +246,15 @@ export class UserService {
           ),
           sessionExpire: session.expire,
         };
+      } else {
+        throw err(
+          Status.ERROR_INVALID_USER_STATUS,
+          'User is pending registration or is suspended.',
+        );
       }
+    } else {
+      throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
     }
-    throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
   }
 
   /**
