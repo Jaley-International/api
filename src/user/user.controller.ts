@@ -17,7 +17,7 @@ import {
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import { getHeaderSessionId, getSessionUser } from '../utils/session';
+import { getHeaderSessionId } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -61,8 +61,7 @@ export class UserController {
     @Req() req: Request,
     @Body() body: PreRegisterUserDto,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const user = await this.userService.preregister(curUser, body);
+    const user = await this.userService.preregister(body);
     return res('Successfully pre-registered a new user.', { user: user });
   }
 

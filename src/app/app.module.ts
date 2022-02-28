@@ -42,9 +42,15 @@ export class AppModule implements NestModule {
         { path: '/links/:shareId/node', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
-    consumer.apply(PrivilegeValidator).forRoutes({
-      path: 'users',
-      method: RequestMethod.GET,
-    });
+    consumer.apply(PrivilegeValidator).forRoutes(
+      {
+        path: 'users',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'users',
+        method: RequestMethod.POST,
+      },
+    );
   }
 }
