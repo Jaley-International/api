@@ -51,6 +51,10 @@ export class AppModule implements NestModule {
         path: 'users',
         method: RequestMethod.POST,
       },
+      {
+        path: 'users/:username',
+        method: RequestMethod.DELETE,
+      },
     );
   }
 }
