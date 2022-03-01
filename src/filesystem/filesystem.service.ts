@@ -114,7 +114,7 @@ export class FilesystemService implements OnModuleInit {
     // file will be deleted after some time
     setTimeout(() => {
       deleteTmpFile(file.filename);
-    }, parseInt(process.env.PEC_API_TMP_FILE_EXP));
+    }, parseInt(process.env.PEC_API_TMP_FILE_EXP) * 1000);
 
     return file.filename;
   }
