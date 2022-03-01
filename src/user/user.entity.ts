@@ -51,7 +51,7 @@ export class User {
   @Column({ type: 'enum', enum: UserStatus })
   userStatus: UserStatus;
 
-  @Column()
+  @Column({ unique: true })
   registerKey: string;
 
   @Column({ nullable: true, type: 'bigint' })

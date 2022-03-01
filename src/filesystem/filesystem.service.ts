@@ -88,7 +88,7 @@ export class FilesystemService implements OnModuleInit {
     } else {
       node = await this.findAll();
     }
-    if (node.owner !== curUser) {
+    if (node.parent && node.owner !== curUser) {
       throw err(
         Status.ERROR_INVALID_NODE_OWNER,
         'Current user is not the owner of the node.',
