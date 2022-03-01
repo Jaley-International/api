@@ -57,10 +57,7 @@ export class UserController {
    * Returns to client the newly pre-registered user.
    */
   @Post()
-  async preregister(
-    @Req() req: Request,
-    @Body() body: PreRegisterUserDto,
-  ): Promise<ResBody> {
+  async preregister(@Body() body: PreRegisterUserDto): Promise<ResBody> {
     const user = await this.userService.preregister(body);
     return res('Successfully pre-registered a new user.', { user: user });
   }
