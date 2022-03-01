@@ -1,9 +1,6 @@
 import assert from 'assert';
 import forge, { Hex } from 'node-forge';
 
-export const INSTANCE_ID = process.env.PEC_API_INSTANCE_ID;
-export const SERVER_RANDOM_VALUE = process.env.PEC_API_SERVER_RANDOM_VALUE;
-
 /**
  * Adds padding to a string to prevent timing attacks
  * @param {string}      str             Original string.

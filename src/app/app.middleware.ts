@@ -11,7 +11,7 @@ export async function sessionValidator(
   next();
 }
 
-export async function PrivilegeValidator(
+export async function privilegeValidator(
   req: Request,
   res: Response,
   next: NextFunction,

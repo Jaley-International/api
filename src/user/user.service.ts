@@ -13,9 +13,7 @@ import {
   addPadding,
   generateSessionIdentifier,
   hexToBase64Url,
-  INSTANCE_ID,
   rsaPublicEncrypt,
-  SERVER_RANDOM_VALUE,
   sha256,
   sha512,
 } from 'src/utils/security';
@@ -194,8 +192,10 @@ export class UserService {
     return sha256(
       addPadding(
         (user ? user.registerKey : username) +
-          INSTANCE_ID +
-          (user ? user.clientRandomValue : SERVER_RANDOM_VALUE),
+          process.env.PEC_API_INSTANCE_ID +
+          (user
+            ? user.clientRandomValue
+            : process.env.PEC_API_SERVER_RANDOM_VALUE),
         128,
       ),
     );
