@@ -70,4 +70,14 @@ export class UpdateRefDto {
   @IsString()
   @IsNotEmpty()
   newRef: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  newEncryptedMetadata: string;
+
+  @ApiProperty()
+  @IsString()
+  @Matches(/^[0-9a-f]*$/)
+  newTag: string;
 }

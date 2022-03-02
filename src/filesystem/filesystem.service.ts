@@ -180,6 +180,8 @@ export class FilesystemService implements OnModuleInit {
     moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
     deletePermanentFile(node); // deleting old file
     node.ref = body.newRef; // updating file reference (just like overwrite)
+    node.encryptedMetadata = body.newEncryptedMetadata;
+    node.tag = body.newTag;
 
     await this.nodeRepo.save(node);
   }
