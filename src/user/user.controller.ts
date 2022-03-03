@@ -57,8 +57,13 @@ export class UserController {
    * Returns to client the newly pre-registered user.
    */
   @Post()
-  async preregister(@Body() body: PreRegisterUserDto): Promise<ResBody> {
-    const user = await this.userService.preregister(body);
+  async preregister(
+    @Req() req: Request,
+    @Body() body: PreRegisterUserDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const sessionId = await getHeaderSessionId(req);
+    const user = await this.userService.preregister(body, curUser, sessionId);
     return res('Successfully pre-registered a new user.', { user: user });
   }
 
@@ -67,8 +72,12 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post('register')
-  async register(@Body() body: RegisterUserDto): Promise<ResBody> {
-    const user = await this.userService.register(body);
+  async register(
+    @Req() req: Request,
+    @Body() body: RegisterUserDto,
+  ): Promise<ResBody> {
+    const sessionId = await getHeaderSessionId(req);
+    const user = await this.userService.register(body, sessionId);
     return res('Successfully created a new user account.', { user: user });
   }
 
@@ -88,10 +97,18 @@ export class UserController {
    */
   @Patch(':username')
   async update(
+    @Req() req: Request,
     @Param('username') username: string,
     @Body() body: UpdateUserDto,
   ): Promise<ResBody> {
-    const user = await this.userService.update(username, body);
+    const curUser = await getSessionUser(req);
+    const sessionId = await getHeaderSessionId(req);
+    const user = await this.userService.update(
+      curUser,
+      sessionId,
+      username,
+      body,
+    );
     return res('Successfully updated user account data.', { user: user });
   }
 

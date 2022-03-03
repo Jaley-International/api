@@ -20,6 +20,8 @@ import {
 import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
 import forge from 'node-forge';
+import { LogService } from '../log/log.service';
+import { ActivityType } from '../log/log.entity';
 
 export interface LoginDetails {
   encryptedMasterKey: string;
@@ -37,6 +39,7 @@ export class UserService {
     @InjectRepository(Session)
     private sessionRepo: Repository<Session>,
     private mailService: MailService,
+    private logService: LogService,
   ) {}
 
   private async mailExists(email: string): Promise<boolean> {
@@ -82,7 +85,11 @@ export class UserService {
    * Pre-registers a new user by an admin user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async preregister(body: PreRegisterUserDto): Promise<User> {
+  async preregister(
+    body: PreRegisterUserDto,
+    curUser: User,
+    sessionId: string,
+  ): Promise<User> {
     if (!(await this.userExists(body.username))) {
       if (!(await this.mailExists(body.email))) {
         const newUser = new User();
@@ -98,6 +105,15 @@ export class UserService {
           forge.util.bytesToHex(forge.random.getBytesSync(12)),
         );
         await this.mailService.sendUserConfirmation(newUser);
+        const session = await this.findOneSession({
+          where: { id: sessionId },
+        });
+        await this.logService.createUserLog(
+          ActivityType.USER_CREATION,
+          newUser,
+          curUser,
+          session,
+        );
         return await this.userRepo.save(newUser);
       } else {
         throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
@@ -111,7 +127,7 @@ export class UserService {
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async register(body: RegisterUserDto): Promise<User> {
+  async register(body: RegisterUserDto, sessionId: string): Promise<User> {
     const curUser = await this.userRepo.findOne({
       where: { registerKey: body.registerKey },
     });
@@ -125,6 +141,15 @@ export class UserService {
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.userStatus = UserStatus.OK;
         curUser.createdAt = Date.now();
+        const session = await this.findOneSession({
+          where: { id: sessionId },
+        });
+        await this.logService.createUserLog(
+          ActivityType.USER_REGISTRATION,
+          curUser,
+          curUser,
+          session,
+        );
         return await this.userRepo.save(curUser);
       } else {
         throw err(
@@ -141,7 +166,12 @@ export class UserService {
    * Updates a user account parameters specified in the request.
    * Returns the updated user.
    */
-  async update(username: string, body: UpdateUserDto): Promise<User> {
+  async update(
+    curUser: User,
+    sessionId: string,
+    username: string,
+    body: UpdateUserDto,
+  ): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
 
     if (
@@ -157,7 +187,15 @@ export class UserService {
     user.group = body.group;
     user.job = body.job;
     user.accessLevel = body.accessLevel;
-
+    const session = await this.findOneSession({
+      where: { id: sessionId },
+    });
+    await this.logService.createUserLog(
+      ActivityType.USER_UPDATE,
+      user,
+      curUser,
+      session,
+    );
     await this.userRepo.save(user);
     return user;
   }
@@ -223,7 +261,12 @@ export class UserService {
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
         await this.sessionRepo.save(session);
-
+        await this.logService.createUserLog(
+          ActivityType.USER_LOGIN,
+          user,
+          user,
+          session,
+        );
         // returning encryption keys and connection information
         return {
           encryptedMasterKey: user.encryptedMasterKey,
