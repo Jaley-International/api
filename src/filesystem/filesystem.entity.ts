@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
+import { NodeLog } from '../log/log.entity';
 
 export enum NodeType {
   FILE = 'FILE',
@@ -48,6 +49,15 @@ export class Node {
 
   @OneToMany(() => Link, (link) => link.node)
   links: Link[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.node)
+  logs: NodeLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.oldParent)
+  oldParentLogs: NodeLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.newParent)
+  newParentLogs: NodeLog[];
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;

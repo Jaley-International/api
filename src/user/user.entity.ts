@@ -7,6 +7,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
+import { NodeLog, UserLog } from '../log/log.entity';
 
 export enum AccessLevel {
   ADMINISTRATOR = 'ADMINISTRATOR',
@@ -77,6 +78,18 @@ export class User {
 
   @OneToMany(() => Node, (node) => node.owner)
   nodes: Node[];
+
+  @OneToMany(() => UserLog, (userLog) => userLog.subject)
+  subjectLogs: UserLog[];
+
+  @OneToMany(() => UserLog, (userLog) => userLog.performer)
+  performerLogs: UserLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.owner)
+  nodeOwnerLogs: NodeLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.sharedWith)
+  nodeSharedWithLogs: NodeLog[];
 }
 
 @Entity()
@@ -95,4 +108,7 @@ export class Session {
 
   @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
   user: User;
+
+  @OneToMany(() => UserLog, (userLog) => userLog.session)
+  logs: UserLog[];
 }
