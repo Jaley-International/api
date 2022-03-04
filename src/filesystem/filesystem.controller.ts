@@ -39,7 +39,7 @@ export class FilesystemController {
   async getFileSystem(@Req() req: Request): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const filesystem = await this.fileService.getFileSystem(curUser);
-    return res('Successfully got all file system.', { filesystem: filesystem });
+    return res('Successfully got file system.', { filesystem: filesystem });
   }
 
   /**
