@@ -45,8 +45,8 @@ export class UserLog extends Log {
   performer: User; // The user who performs the activity, e.g., the admin who creates the user.
   // Sometimes the performer and the subject are the same person, e.g., the user who logs in.
 
-  @ManyToOne(() => Session, (session) => session.logs)
-  session: Session;
+  @ManyToOne(() => Session, (session) => session.userLogs)
+  session: Session; // The session of the activity performer.
 }
 
 @Entity()
@@ -54,14 +54,17 @@ export class NodeLog extends Log {
   @ManyToOne(() => Node, (node) => node.logs)
   node: Node;
 
+  @ManyToOne(() => User, (user) => user.nodeOwnerLogs)
+  owner: User;
+
+  @ManyToOne(() => Session, (session) => session.nodeLogs)
+  session: Session;
+
   @ManyToOne(() => Node, (node) => node.oldParentLogs)
   oldParent: Node;
 
   @ManyToOne(() => Node, (node) => node.newParentLogs)
   newParent: Node;
-
-  @ManyToOne(() => User, (user) => user.nodeOwnerLogs)
-  owner: User;
 
   @ManyToOne(() => User, (user) => user.nodeSharedWithLogs)
   sharedWith: User;

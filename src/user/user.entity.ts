@@ -110,5 +110,8 @@ export class Session {
   user: User;
 
   @OneToMany(() => UserLog, (userLog) => userLog.session)
-  logs: UserLog[];
+  userLogs: UserLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.session)
+  nodeLogs: NodeLog[];
 }
