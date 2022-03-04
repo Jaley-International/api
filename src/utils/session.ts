@@ -27,7 +27,7 @@ export async function getHeaderSessionId(req: Request): Promise<string> {
  * Throws an exception if the session is not found or expired.
  * Throws also an exception if the associated user does not exist.
  */
-export async function getValidSession(sessionId: string): Promise<Session> {
+async function getValidSession(sessionId: string): Promise<Session> {
   const sessionRepo = getConnection().getRepository(Session);
 
   const session = await sessionRepo.findOne({
@@ -56,4 +56,13 @@ export async function getSessionUser(req: Request): Promise<User> {
   const sessionId = await getHeaderSessionId(req);
   const session = await getValidSession(sessionId);
   return session.user;
+}
+
+/**
+ * Returns a session from the request.
+ */
+export async function getSession(req: Request): Promise<Session> {
+  const sessionId = await getHeaderSessionId(req);
+  const session = await getValidSession(sessionId);
+  return session;
 }
