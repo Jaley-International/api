@@ -14,21 +14,23 @@ export class LogService {
   ) {}
 
   /**
-   * TODO write documentation
+   * Creates a new user log entry.
    */
   async createUserLog(
     activityType: ActivityType,
     subject: User,
     performer: User,
-    session: Session,
+    session?: Session,
   ): Promise<void> {
     const newLog = new UserLog();
-    newLog.logType = LogType.USER;
     newLog.timestamp = Date.now();
+    newLog.logType = LogType.USER;
+    newLog.activityType = activityType;
     newLog.subject = subject;
     newLog.performer = performer;
-    newLog.session = session;
-    newLog.activityType = activityType;
+    if (session) {
+      newLog.session = session;
+    }
     await this.userLogRepo.save(newLog);
   }
 }

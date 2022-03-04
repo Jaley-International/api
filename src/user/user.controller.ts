@@ -17,7 +17,11 @@ import {
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import { getHeaderSessionId } from '../utils/session';
+import {
+  getHeaderSessionId,
+  getSession,
+  getSessionUser,
+} from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -62,8 +66,8 @@ export class UserController {
     @Body() body: PreRegisterUserDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    const sessionId = await getHeaderSessionId(req);
-    const user = await this.userService.preregister(body, curUser, sessionId);
+    const session = await getSession(req);
+    const user = await this.userService.preregister(curUser, session, body);
     return res('Successfully pre-registered a new user.', { user: user });
   }
 
@@ -72,12 +76,8 @@ export class UserController {
    * Returns to client the newly created user.
    */
   @Post('register')
-  async register(
-    @Req() req: Request,
-    @Body() body: RegisterUserDto,
-  ): Promise<ResBody> {
-    const sessionId = await getHeaderSessionId(req);
-    const user = await this.userService.register(body, sessionId);
+  async register(@Body() body: RegisterUserDto): Promise<ResBody> {
+    const user = await this.userService.register(body);
     return res('Successfully created a new user account.', { user: user });
   }
 
@@ -102,11 +102,11 @@ export class UserController {
     @Body() body: UpdateUserDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    const sessionId = await getHeaderSessionId(req);
+    const session = await getSession(req);
     const user = await this.userService.update(
-      curUser,
-      sessionId,
       username,
+      curUser,
+      session,
       body,
     );
     return res('Successfully updated user account data.', { user: user });
@@ -117,8 +117,13 @@ export class UserController {
    * Returns to client the deleted user.
    */
   @Delete(':username')
-  async delete(@Param('username') username: string): Promise<ResBody> {
-    const user = await this.userService.delete(username);
+  async delete(
+    @Req() req: Request,
+    @Param('username') username: string,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    const user = await this.userService.delete(username, curUser, session);
     return res('Successfully deleted user.', { user: user });
   }
 

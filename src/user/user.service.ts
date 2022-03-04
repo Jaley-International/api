@@ -86,9 +86,9 @@ export class UserService {
    * Throws an exception if the email or username is already used.
    */
   async preregister(
-    body: PreRegisterUserDto,
     curUser: User,
-    sessionId: string,
+    session: Session,
+    body: PreRegisterUserDto,
   ): Promise<User> {
     if (!(await this.userExists(body.username))) {
       if (!(await this.mailExists(body.email))) {
@@ -105,9 +105,6 @@ export class UserService {
           forge.util.bytesToHex(forge.random.getBytesSync(12)),
         );
         await this.mailService.sendUserConfirmation(newUser);
-        const session = await this.findOneSession({
-          where: { id: sessionId },
-        });
         await this.logService.createUserLog(
           ActivityType.USER_CREATION,
           newUser,
@@ -127,7 +124,7 @@ export class UserService {
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async register(body: RegisterUserDto, sessionId: string): Promise<User> {
+  async register(body: RegisterUserDto): Promise<User> {
     const curUser = await this.userRepo.findOne({
       where: { registerKey: body.registerKey },
     });
@@ -141,14 +138,10 @@ export class UserService {
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.userStatus = UserStatus.OK;
         curUser.createdAt = Date.now();
-        const session = await this.findOneSession({
-          where: { id: sessionId },
-        });
         await this.logService.createUserLog(
           ActivityType.USER_REGISTRATION,
           curUser,
           curUser,
-          session,
         );
         return await this.userRepo.save(curUser);
       } else {
@@ -167,9 +160,9 @@ export class UserService {
    * Returns the updated user.
    */
   async update(
-    curUser: User,
-    sessionId: string,
     username: string,
+    curUser: User,
+    session: Session,
     body: UpdateUserDto,
   ): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
@@ -187,25 +180,28 @@ export class UserService {
     user.group = body.group;
     user.job = body.job;
     user.accessLevel = body.accessLevel;
-    const session = await this.findOneSession({
-      where: { id: sessionId },
-    });
+    await this.userRepo.save(user);
+
     await this.logService.createUserLog(
       ActivityType.USER_UPDATE,
       user,
       curUser,
       session,
     );
-    await this.userRepo.save(user);
+
     return user;
   }
 
   /**
-   * Delete the target user,
+   * Deletes the target user,
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(username: string): Promise<User> {
+  async delete(
+    username: string,
+    curUser: User,
+    session: Session,
+  ): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
       relations: ['nodes'],
@@ -216,6 +212,14 @@ export class UserService {
       node.owner = null;
       await nodeRepo.save(node);
     }
+
+    await this.logService.createUserLog(
+      ActivityType.USER_DELETION,
+      user,
+      curUser,
+      session,
+    );
+
     return await this.userRepo.remove(user);
   }
 
@@ -243,7 +247,7 @@ export class UserService {
    * Logs in an existing user.
    * Creates a new session entity with an expiration date.
    * Returns the encryption keys of the user.
-   * Throws an exception if user's credential are not valid.
+   * Throws an exception if user's credentials are not valid.
    */
   async login(body: AuthenticationDto): Promise<LoginDetails> {
     const user = await this.userRepo.findOne({ username: body.username });
