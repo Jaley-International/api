@@ -38,37 +38,43 @@ export abstract class Log {
 
 @Entity()
 export class UserLog extends Log {
-  @ManyToOne(() => User, (user) => user.subjectLogs)
+  @ManyToOne(() => User, (user) => user.subjectLogs, { onDelete: 'CASCADE' })
   subject: User; // The user who is the subject of an activity, e.g., the user who is created by admin.
 
-  @ManyToOne(() => User, (user) => user.performerLogs)
+  @ManyToOne(() => User, (user) => user.performerLogs, { onDelete: 'CASCADE' })
   performer: User; // The user who performs the activity, e.g., the admin who creates the user.
   // Sometimes the performer and the subject are the same person, e.g., the user who logs in.
 
-  @ManyToOne(() => Session, (session) => session.userLogs)
+  @ManyToOne(() => Session, (session) => session.userLogs, {
+    onDelete: 'CASCADE',
+  })
   session: Session; // The session of the activity performer.
 }
 
 @Entity()
 export class NodeLog extends Log {
-  @ManyToOne(() => Node, (node) => node.logs)
+  @ManyToOne(() => Node, (node) => node.logs, { onDelete: 'CASCADE' })
   node: Node;
 
-  @ManyToOne(() => User, (user) => user.nodeOwnerLogs)
+  @ManyToOne(() => User, (user) => user.nodeOwnerLogs, { onDelete: 'CASCADE' })
   owner: User;
 
-  @ManyToOne(() => Session, (session) => session.nodeLogs)
+  @ManyToOne(() => Session, (session) => session.nodeLogs, {
+    onDelete: 'CASCADE',
+  })
   session: Session;
 
-  @ManyToOne(() => Node, (node) => node.oldParentLogs)
+  @ManyToOne(() => Node, (node) => node.oldParentLogs, { onDelete: 'CASCADE' })
   oldParent: Node;
 
-  @ManyToOne(() => Node, (node) => node.newParentLogs)
+  @ManyToOne(() => Node, (node) => node.newParentLogs, { onDelete: 'CASCADE' })
   newParent: Node;
 
-  @ManyToOne(() => User, (user) => user.nodeSharedWithLogs)
+  @ManyToOne(() => User, (user) => user.nodeSharedWithLogs, {
+    onDelete: 'CASCADE',
+  })
   sharedWith: User;
 
-  @ManyToOne(() => Link, (link) => link.logs)
+  @ManyToOne(() => Link, (link) => link.logs, { onDelete: 'CASCADE' })
   sharingLink: Link;
 }

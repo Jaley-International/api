@@ -105,13 +105,14 @@ export class UserService {
           forge.util.bytesToHex(forge.random.getBytesSync(12)),
         );
         await this.mailService.sendUserConfirmation(newUser);
+        await this.userRepo.save(newUser);
         await this.logService.createUserLog(
           ActivityType.USER_CREATION,
           newUser,
           curUser,
           session,
         );
-        return await this.userRepo.save(newUser);
+        return newUser;
       } else {
         throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
       }
@@ -138,12 +139,13 @@ export class UserService {
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.userStatus = UserStatus.OK;
         curUser.createdAt = Date.now();
+        await this.userRepo.save(curUser);
         await this.logService.createUserLog(
           ActivityType.USER_REGISTRATION,
           curUser,
           curUser,
         );
-        return await this.userRepo.save(curUser);
+        return curUser;
       } else {
         throw err(
           Status.ERROR_INVALID_USER_STATUS,
@@ -197,11 +199,7 @@ export class UserService {
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(
-    username: string,
-    curUser: User,
-    session: Session,
-  ): Promise<User> {
+  async delete(username: string): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
       relations: ['nodes'],
@@ -212,14 +210,6 @@ export class UserService {
       node.owner = null;
       await nodeRepo.save(node);
     }
-
-    await this.logService.createUserLog(
-      ActivityType.USER_DELETION,
-      user,
-      curUser,
-      session,
-    );
-
     return await this.userRepo.remove(user);
   }
 
