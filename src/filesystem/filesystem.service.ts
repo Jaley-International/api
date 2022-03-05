@@ -101,6 +101,23 @@ export class FilesystemService implements OnModuleInit {
   }
 
   /**
+   * Returns the list of parent nodes of the current nodeId until
+   * the root folder is reached.
+   */
+  async getNodeParentList(curUser: User, nodeId: number) {
+    const node = await this.findOne({ where: { id: nodeId } });
+    const path = await this.nodeRepo.findAncestors(node, {
+      relations: ['owner'],
+    });
+    return path
+      .filter((n) => !n.owner || n.owner.username === curUser.username)
+      .map((n) => {
+        delete n.owner;
+        return n;
+      });
+  }
+
+  /**
    * Throws an error if the file object in argument is invalid (undefined, empty, not uploaded...).
    * This file will be deleted if he's still in the temporary folder after some time.
    * Returns the name of the file.
