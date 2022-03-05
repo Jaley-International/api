@@ -19,14 +19,17 @@ import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { User } from '../user/user.entity';
+import { Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
+import { ActivityType } from '../log/log.entity';
+import { LogService } from '../log/log.service';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
   constructor(
     @InjectRepository(Node)
     private nodeRepo: TreeRepository<Node>,
+    private logService: LogService,
   ) {}
 
   /**
@@ -99,7 +102,7 @@ export class FilesystemService implements OnModuleInit {
 
   /**
    * Throws an error if the file object in argument is invalid (undefined, empty, not uploaded...).
-   * This file will be deleted if he's still in the temporary folder after 30 seconds.
+   * This file will be deleted if he's still in the temporary folder after some time.
    * Returns the name of the file.
    */
   uploadFile(file: Express.Multer.File): string {
@@ -123,7 +126,7 @@ export class FilesystemService implements OnModuleInit {
    * Uploads a file object into the database architectures.
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async createFile(curUser: User, body: CreateFileDto) {
+  async createFile(curUser: User, session: Session, body: CreateFileDto) {
     const newFile = new Node();
     newFile.iv = body.iv;
     newFile.tag = body.tag;
@@ -141,12 +144,20 @@ export class FilesystemService implements OnModuleInit {
     });
     moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
+    await this.logService.createNodeLog(
+      ActivityType.FILE_UPLOAD,
+      newFile,
+      session,
+      newFile.parent,
+      null,
+      curUser,
+    );
   }
 
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(curUser: User, body: CreateFolderDto) {
+  async createFolder(curUser: User, session: Session, body: CreateFolderDto) {
     const newFolder = new Node();
     newFolder.iv = body.iv;
     newFolder.tag = body.tag;
@@ -163,6 +174,14 @@ export class FilesystemService implements OnModuleInit {
       },
     });
     await this.nodeRepo.save(newFolder);
+    await this.logService.createNodeLog(
+      ActivityType.FOLDER_CREATION,
+      newFolder,
+      session,
+      newFolder.parent,
+      null,
+      curUser,
+    );
   }
 
   /**
@@ -257,13 +276,25 @@ export class FilesystemService implements OnModuleInit {
    * Find the Node entity of the file in the database
    * Return the file content of the file.
    */
-  async getFile(nodeId: number): Promise<StreamableFile> {
+  async getFile(
+    curUser: User,
+    session: Session,
+    nodeId: number,
+  ): Promise<StreamableFile> {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
     });
     const path = join(process.cwd(), DiskFolders.PERM, node.ref);
     if (existsSync(path)) {
       const file = createReadStream(path);
+      await this.logService.createNodeLog(
+        ActivityType.FILE_DOWNLOAD,
+        node,
+        session,
+        node.parent,
+        null,
+        curUser,
+      );
       return new StreamableFile(file);
     }
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');

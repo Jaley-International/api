@@ -20,6 +20,7 @@ export enum ActivityType {
   FILE_SHARING = 'FILE_SHARING',
   FILE_DELETION = 'FILE_DELETION',
   FILE_MOVING = 'FILE_MOVING',
+  FOLDER_CREATION = 'FOLDER_CREATION',
 }
 
 export abstract class Log {
@@ -56,19 +57,19 @@ export class NodeLog extends Log {
   @ManyToOne(() => Node, (node) => node.logs, { onDelete: 'CASCADE' })
   node: Node;
 
-  @ManyToOne(() => User, (user) => user.nodeOwnerLogs, { onDelete: 'CASCADE' })
-  owner: User;
-
   @ManyToOne(() => Session, (session) => session.nodeLogs, {
     onDelete: 'CASCADE',
   })
-  session: Session;
+  session: Session; // The session of the current user.
 
   @ManyToOne(() => Node, (node) => node.oldParentLogs, { onDelete: 'CASCADE' })
   oldParent: Node;
 
   @ManyToOne(() => Node, (node) => node.newParentLogs, { onDelete: 'CASCADE' })
   newParent: Node;
+
+  @ManyToOne(() => User, (user) => user.nodeOwnerLogs, { onDelete: 'CASCADE' })
+  owner: User;
 
   @ManyToOne(() => User, (user) => user.nodeSharedWithLogs, {
     onDelete: 'CASCADE',

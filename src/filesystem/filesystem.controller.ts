@@ -26,7 +26,7 @@ import {
 import { diskStorage } from 'multer';
 import { DiskFolders } from '../utils/uploadsManager';
 import { res, ResBody } from '../utils/communication';
-import { getSessionUser } from '../utils/session';
+import { getSession, getSessionUser } from '../utils/session';
 
 @Controller('file-system')
 export class FilesystemController {
@@ -79,7 +79,8 @@ export class FilesystemController {
     @Body() body: CreateFileDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    await this.fileService.createFile(curUser, body);
+    const session = await getSession(req);
+    await this.fileService.createFile(curUser, session, body);
     return res('Successfully created new file.', {});
   }
 
@@ -92,7 +93,8 @@ export class FilesystemController {
     @Body() body: CreateFolderDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    await this.fileService.createFolder(curUser, body);
+    const session = await getSession(req);
+    await this.fileService.createFolder(curUser, session, body);
     return res('Successfully created new folder.', {});
   }
 
@@ -165,15 +167,18 @@ export class FilesystemController {
    */
   @Get(':nodeId/content')
   async downloadFile(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
     // setting encoding method to ensure loyal data retransmission
     res.set({
       'Content-Encoding': 'identity',
     });
     // returns directly the encrypted file,
     // not encapsulated in a response body like the other routes
-    return await this.fileService.getFile(nodeId);
+    return await this.fileService.getFile(curUser, session, nodeId);
   }
 }
