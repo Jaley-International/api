@@ -39,7 +39,7 @@ export class FilesystemController {
   async getFileSystem(@Req() req: Request): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const filesystem = await this.fileService.getFileSystem(curUser);
-    return res('Successfully got all file system.', { filesystem: filesystem });
+    return res('Successfully got file system.', { filesystem: filesystem });
   }
 
   /**
@@ -53,6 +53,22 @@ export class FilesystemController {
     const curUser = await getSessionUser(req);
     const filesystem = await this.fileService.getFileSystem(curUser, nodeId);
     return res("Successfully got node's tree", { filesystem: filesystem });
+  }
+
+  /**
+   * Returns to client the target node's parent list.
+   */
+  @Get(':nodeId/path')
+  async getNodePath(
+    @Req() req: Request,
+    @Param('nodeId', ParseIntPipe) nodeId: number,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const filesystem = await this.fileService.getNodeParentList(
+      curUser,
+      nodeId,
+    );
+    return res("Successfully got node's path", { path: filesystem });
   }
 
   /**
