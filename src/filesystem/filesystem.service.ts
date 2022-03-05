@@ -164,9 +164,10 @@ export class FilesystemService implements OnModuleInit {
     await this.logService.createNodeLog(
       ActivityType.FILE_UPLOAD,
       newFile,
-      session,
       newFile.parent,
       null,
+      curUser,
+      session,
       curUser,
     );
   }
@@ -194,9 +195,10 @@ export class FilesystemService implements OnModuleInit {
     await this.logService.createNodeLog(
       ActivityType.FOLDER_CREATION,
       newFolder,
-      session,
       newFolder.parent,
       null,
+      curUser,
+      session,
       curUser,
     );
   }
@@ -300,6 +302,7 @@ export class FilesystemService implements OnModuleInit {
   ): Promise<StreamableFile> {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
+      relations: ['parent', 'owner'],
     });
     const path = join(process.cwd(), DiskFolders.PERM, node.ref);
     if (existsSync(path)) {
@@ -307,10 +310,11 @@ export class FilesystemService implements OnModuleInit {
       await this.logService.createNodeLog(
         ActivityType.FILE_DOWNLOAD,
         node,
-        session,
         node.parent,
         null,
         curUser,
+        session,
+        node.owner,
       );
       return new StreamableFile(file);
     }

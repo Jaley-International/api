@@ -42,10 +42,11 @@ export class LogService {
   async createNodeLog(
     activityType: ActivityType,
     node: Node,
-    session: Session,
     oldParent: Node,
     newParent?: Node,
-    owner?: User,
+    curUser?: User,
+    session?: Session,
+    nodeOwner?: User,
     sharedWith?: User,
     sharingLink?: Link,
   ): Promise<void> {
@@ -54,13 +55,18 @@ export class LogService {
     newLog.logType = LogType.NODE;
     newLog.activityType = activityType;
     newLog.node = node;
-    newLog.session = session;
     newLog.oldParent = oldParent;
     if (newParent) {
       newLog.newParent = newParent;
     }
-    if (owner) {
-      newLog.owner = owner;
+    if (curUser) {
+      newLog.curUser = curUser;
+    }
+    if (session) {
+      newLog.session = session;
+    }
+    if (nodeOwner) {
+      newLog.nodeOwner = nodeOwner;
     }
     if (sharedWith) {
       newLog.sharedWith = sharedWith;
