@@ -121,10 +121,13 @@ export class FilesystemController {
    */
   @Patch(':nodeId/ref')
   async updateRef(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateRefDto,
   ): Promise<ResBody> {
-    await this.fileService.updateRef(nodeId, body);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.updateRef(curUser, session, nodeId, body);
     return res('Successfully overwritten file.', {});
   }
 
@@ -145,10 +148,13 @@ export class FilesystemController {
    */
   @Patch(':nodeId/parent')
   async updateParent(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateParentDto,
   ): Promise<ResBody> {
-    await this.fileService.updateParent(nodeId, body);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.updateParent(session, curUser, nodeId, body);
     return res('Successfully moved file to another parent.', {});
   }
 
@@ -157,9 +163,12 @@ export class FilesystemController {
    */
   @Delete(':nodeId')
   async delete(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ResBody> {
-    await this.fileService.delete(nodeId);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.delete(curUser, session, nodeId);
     return res('Successfully deleted node.', {});
   }
 

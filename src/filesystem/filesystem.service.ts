@@ -109,6 +109,7 @@ export class FilesystemService implements OnModuleInit {
     const path = await this.nodeRepo.findAncestors(node, {
       relations: ['owner'],
     });
+
     return path
       .filter((n) => !n.owner || n.owner.username === curUser.username)
       .map((n) => {
@@ -205,12 +206,18 @@ export class FilesystemService implements OnModuleInit {
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(nodeId: number, body: UpdateRefDto) {
+  async updateRef(
+    curUser: User,
+    session: Session,
+    nodeId: number,
+    body: UpdateRefDto,
+  ) {
     const node = await this.findOne({
       where: {
         id: nodeId,
         type: NodeType.FILE,
       },
+      relations: ['parent'],
     });
 
     moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
@@ -218,7 +225,14 @@ export class FilesystemService implements OnModuleInit {
     node.ref = body.newRef; // updating file reference (just like overwrite)
     node.encryptedMetadata = body.newEncryptedMetadata;
     node.tag = body.newTag;
-
+    await this.logService.createNodeLog(
+      ActivityType.FILE_OVERWRITE,
+      node,
+      session,
+      node.parent,
+      null,
+      curUser,
+    );
     await this.nodeRepo.save(node);
   }
 
@@ -238,13 +252,19 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(nodeId: number, body: UpdateParentDto) {
+  async updateParent(
+    session: Session,
+    curUser: User,
+    nodeId: number,
+    body: UpdateParentDto,
+  ) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
+      relations: ['parent'],
     });
-
+    const nodeParentOrigin = node.parent;
     // updating parent
     node.parent = await this.findOne({
       where: {
@@ -252,20 +272,59 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
-
+    if (node.type === NodeType.FOLDER) {
+      await this.logService.createNodeLog(
+        ActivityType.FOLDER_MOVING,
+        node,
+        session,
+        nodeParentOrigin,
+        node.parent,
+        curUser,
+      );
+    } else {
+      await this.logService.createNodeLog(
+        ActivityType.FILE_MOVING,
+        node,
+        session,
+        nodeParentOrigin,
+        node.parent,
+        curUser,
+      );
+    }
     await this.nodeRepo.save(node);
   }
 
   /**
    * Deletes a node by id and all of its descendant.
    */
-  async delete(nodeId: number) {
+  async delete(curUser: User, session: Session, nodeId: number) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
+      relations: ['parent'],
     });
     const descendants = await this.nodeRepo.findDescendants(node);
+
+    if (node.type === NodeType.FILE) {
+      await this.logService.createNodeLog(
+        ActivityType.FILE_DELETION,
+        node,
+        session,
+        node.parent,
+        null,
+        curUser,
+      );
+    } else {
+      await this.logService.createNodeLog(
+        ActivityType.FOLDER_DELETION,
+        node,
+        session,
+        node.parent,
+        null,
+        curUser,
+      );
+    }
 
     // removes the files stored on server disk
     // for the nodes representing a file
