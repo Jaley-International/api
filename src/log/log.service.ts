@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { ActivityType, LogType, NodeLog, UserLog } from './log.entity';
 import { Session, User } from '../user/user.entity';
 import { Node } from '../filesystem/filesystem.entity';
@@ -75,5 +75,20 @@ export class LogService {
       newLog.sharingLink = sharingLink;
     }
     await this.nodeLogRepo.save(newLog);
+  }
+
+  /**
+   * Returns all existing node Logs based on activity.
+   */
+  async findAllNodeLogs(options: FindManyOptions<NodeLog>): Promise<NodeLog[]> {
+    console.log('works');
+    return await this.nodeLogRepo.find(options);
+  }
+
+  /**
+   * Returns all existing node Logs based on activity.
+   */
+  async findAllUserLogs(options: FindManyOptions<UserLog>): Promise<UserLog[]> {
+    return await this.userLogRepo.find(options);
   }
 }
