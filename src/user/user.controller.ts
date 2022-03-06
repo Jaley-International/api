@@ -104,9 +104,9 @@ export class UserController {
     const curUser = await getSessionUser(req);
     const session = await getSession(req);
     const user = await this.userService.update(
-      username,
       curUser,
       session,
+      username,
       body,
     );
     return res('Successfully updated user account data.', { user: user });
@@ -117,8 +117,13 @@ export class UserController {
    * Returns to client the deleted user.
    */
   @Delete(':username')
-  async delete(@Param('username') username: string): Promise<ResBody> {
-    const user = await this.userService.delete(username);
+  async delete(
+    @Req() req: Request,
+    @Param('username') username: string,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    const user = await this.userService.delete(curUser, session, username);
     return res('Successfully deleted user.', { user: user });
   }
 

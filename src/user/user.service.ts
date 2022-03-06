@@ -162,9 +162,9 @@ export class UserService {
    * Returns the updated user.
    */
   async update(
-    username: string,
     curUser: User,
     session: Session,
+    username: string,
     body: UpdateUserDto,
   ): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
@@ -199,7 +199,11 @@ export class UserService {
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(username: string): Promise<User> {
+  async delete(
+    curUser: User,
+    session: Session,
+    username: string,
+  ): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
       relations: ['nodes'],
@@ -210,6 +214,12 @@ export class UserService {
       node.owner = null;
       await nodeRepo.save(node);
     }
+    await this.logService.createUserLog(
+      ActivityType.USER_DELETION,
+      user,
+      curUser,
+      session,
+    );
     return await this.userRepo.remove(user);
   }
 

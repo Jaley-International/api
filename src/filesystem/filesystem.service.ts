@@ -219,7 +219,7 @@ export class FilesystemService implements OnModuleInit {
         id: nodeId,
         type: NodeType.FILE,
       },
-      relations: ['parent'],
+      relations: ['parent', 'owner'],
     });
 
     moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
@@ -227,15 +227,17 @@ export class FilesystemService implements OnModuleInit {
     node.ref = body.newRef; // updating file reference (just like overwrite)
     node.encryptedMetadata = body.newEncryptedMetadata;
     node.tag = body.newTag;
+    await this.nodeRepo.save(node);
+
     await this.logService.createNodeLog(
       ActivityType.FILE_OVERWRITE,
       node,
-      session,
       node.parent,
       null,
       curUser,
+      session,
+      node.owner,
     );
-    await this.nodeRepo.save(node);
   }
 
   /**
@@ -255,8 +257,8 @@ export class FilesystemService implements OnModuleInit {
    * Updates a node's parent (same as moving the node).
    */
   async updateParent(
-    session: Session,
     curUser: User,
+    session: Session,
     nodeId: number,
     body: UpdateParentDto,
   ) {
@@ -264,9 +266,9 @@ export class FilesystemService implements OnModuleInit {
       where: {
         id: nodeId,
       },
-      relations: ['parent'],
+      relations: ['parent', 'owner'],
     });
-    const nodeParentOrigin = node.parent;
+    const oldParent = node.parent;
     // updating parent
     node.parent = await this.findOne({
       where: {
@@ -274,26 +276,18 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
-    if (node.type === NodeType.FOLDER) {
-      await this.logService.createNodeLog(
-        ActivityType.FOLDER_MOVING,
-        node,
-        session,
-        nodeParentOrigin,
-        node.parent,
-        curUser,
-      );
-    } else {
-      await this.logService.createNodeLog(
-        ActivityType.FILE_MOVING,
-        node,
-        session,
-        nodeParentOrigin,
-        node.parent,
-        curUser,
-      );
-    }
     await this.nodeRepo.save(node);
+    await this.logService.createNodeLog(
+      node.type === NodeType.FILE
+        ? ActivityType.FILE_MOVING
+        : ActivityType.FOLDER_MOVING,
+      node,
+      oldParent,
+      node.parent,
+      curUser,
+      session,
+      node.owner,
+    );
   }
 
   /**
@@ -304,29 +298,9 @@ export class FilesystemService implements OnModuleInit {
       where: {
         id: nodeId,
       },
-      relations: ['parent'],
+      relations: ['parent', 'owner'],
     });
     const descendants = await this.nodeRepo.findDescendants(node);
-
-    if (node.type === NodeType.FILE) {
-      await this.logService.createNodeLog(
-        ActivityType.FILE_DELETION,
-        node,
-        session,
-        node.parent,
-        null,
-        curUser,
-      );
-    } else {
-      await this.logService.createNodeLog(
-        ActivityType.FOLDER_DELETION,
-        node,
-        session,
-        node.parent,
-        null,
-        curUser,
-      );
-    }
 
     // removes the files stored on server disk
     // for the nodes representing a file
@@ -334,7 +308,19 @@ export class FilesystemService implements OnModuleInit {
       deletePermanentFile(descendant);
     }
 
-    // removes the target node form database with all its descendants
+    await this.logService.createNodeLog(
+      node.type === NodeType.FILE
+        ? ActivityType.FILE_DELETION
+        : ActivityType.FOLDER_DELETION,
+      node,
+      node.parent,
+      null,
+      curUser,
+      session,
+      node.owner,
+    );
+
+    // removes the target node from database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
   }

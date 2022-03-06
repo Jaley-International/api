@@ -154,8 +154,8 @@ export class FilesystemController {
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.fileService.updateParent(session, curUser, nodeId, body);
-    return res('Successfully moved file to another parent.', {});
+    await this.fileService.updateParent(curUser, session, nodeId, body);
+    return res('Successfully moved node to another parent.', {});
   }
 
   /**
