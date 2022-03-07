@@ -57,6 +57,10 @@ export class AppModule implements NestModule {
       },
       {
         path: 'users/:username',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'users/:username',
         method: RequestMethod.PATCH,
       },
     );
