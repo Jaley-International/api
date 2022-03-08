@@ -18,6 +18,7 @@ export enum AccessLevel {
 export enum UserStatus {
   OK = 'OK',
   PENDING_REGISTRATION = 'PENDING_REGISTRATION',
+  PENDING_VALIDATION = 'PENDING_VALIDATION',
   SUSPENDED = 'SUSPENDED',
 }
 
@@ -72,6 +73,9 @@ export class User {
 
   @Column({ nullable: true, length: 1000 })
   rsaPublicSharingKey: string;
+
+  @Column({ nullable: true })
+  encryptedInstancePublicKey: string;
 
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];

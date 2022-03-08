@@ -20,6 +20,11 @@ export class RegisterUserDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
+  registerKey: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
   @Matches(/^[0-9a-f]{32}$/)
   clientRandomValue: string;
 
@@ -49,7 +54,7 @@ export class RegisterUserDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
-  registerKey: string;
+  encryptedInstancePublicKey: string;
 }
 
 export class PreRegisterUserDto {
