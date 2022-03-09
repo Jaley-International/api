@@ -90,35 +90,43 @@ export class UserService {
     session: Session,
     body: PreRegisterUserDto,
   ): Promise<User> {
+    // handling exceptions
     if (!(await this.userExists(body.username))) {
-      if (!(await this.mailExists(body.email))) {
-        const newUser = new User();
-        newUser.username = body.username;
-        newUser.firstName = body.firstName;
-        newUser.lastName = body.lastName;
-        newUser.email = body.email;
-        newUser.group = body.group;
-        newUser.job = body.job;
-        newUser.accessLevel = body.accessLevel;
-        newUser.userStatus = UserStatus.PENDING_REGISTRATION;
-        newUser.registerKey = hexToBase64Url(
-          forge.util.bytesToHex(forge.random.getBytesSync(12)),
-        );
-        await this.mailService.sendUserConfirmation(newUser);
-        await this.userRepo.save(newUser);
-        await this.logService.createUserLog(
-          ActivityType.USER_CREATION,
-          newUser,
-          curUser,
-          session,
-        );
-        return newUser;
-      } else {
-        throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
-      }
-    } else {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
+    if (!(await this.mailExists(body.email))) {
+      throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+    }
+
+    // new user object creation
+    const newUser = new User();
+    newUser.username = body.username;
+    newUser.firstName = body.firstName;
+    newUser.lastName = body.lastName;
+    newUser.email = body.email;
+    newUser.group = body.group;
+    newUser.job = body.job;
+    newUser.accessLevel = body.accessLevel;
+    newUser.userStatus = UserStatus.PENDING_REGISTRATION;
+    newUser.registerKey = hexToBase64Url(
+      forge.util.bytesToHex(forge.random.getBytesSync(12)),
+    );
+
+    // sending email to user's mail for him to approve
+    await this.mailService.sendUserConfirmation(newUser);
+
+    // database saving
+    await this.userRepo.save(newUser);
+
+    // new log entry for user creation
+    await this.logService.createUserLog(
+      ActivityType.USER_CREATION,
+      newUser,
+      curUser,
+      session,
+    );
+
+    return newUser;
   }
 
   /**

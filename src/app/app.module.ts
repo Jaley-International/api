@@ -44,6 +44,7 @@ export class AppModule implements NestModule {
         { path: 'api/links/(.*)/node', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
+
     consumer.apply(privilegeValidator).forRoutes(
       {
         path: 'users',

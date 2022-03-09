@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ActivityType, LogType, NodeLog, UserLog } from './log.entity';
 import { Session, User } from '../user/user.entity';
 import { Node } from '../filesystem/filesystem.entity';
@@ -16,6 +16,20 @@ export class LogService {
   ) {}
 
   /**
+   * Returns all existing node Logs based on activity.
+   */
+  async findAllNodeLogs(): Promise<NodeLog[]> {
+    return await this.nodeLogRepo.find();
+  }
+
+  /**
+   * Returns all existing node Logs based on activity.
+   */
+  async findAllUserLogs(): Promise<UserLog[]> {
+    return await this.userLogRepo.find();
+  }
+
+  /**
    * Creates a new user log entry.
    */
   async createUserLog(
@@ -25,14 +39,17 @@ export class LogService {
     session?: Session,
   ): Promise<void> {
     const newLog = new UserLog();
+
     newLog.timestamp = Date.now();
     newLog.logType = LogType.USER;
     newLog.activityType = activityType;
     newLog.subject = subject;
     newLog.performer = performer;
+
     if (session) {
       newLog.session = session;
     }
+
     await this.userLogRepo.save(newLog);
   }
 
@@ -51,44 +68,20 @@ export class LogService {
     sharingLink?: Link,
   ): Promise<void> {
     const newLog = new NodeLog();
+
     newLog.timestamp = Date.now();
     newLog.logType = LogType.NODE;
     newLog.activityType = activityType;
     newLog.node = node;
     newLog.oldParent = oldParent;
-    if (newParent) {
-      newLog.newParent = newParent;
-    }
-    if (curUser) {
-      newLog.curUser = curUser;
-    }
-    if (session) {
-      newLog.session = session;
-    }
-    if (nodeOwner) {
-      newLog.nodeOwner = nodeOwner;
-    }
-    if (sharedWith) {
-      newLog.sharedWith = sharedWith;
-    }
-    if (sharingLink) {
-      newLog.sharingLink = sharingLink;
-    }
+
+    newLog.newParent = newParent;
+    newLog.curUser = curUser;
+    newLog.session = session;
+    newLog.owner = nodeOwner;
+    newLog.sharedWith = sharedWith;
+    newLog.link = sharingLink;
+
     await this.nodeLogRepo.save(newLog);
-  }
-
-  /**
-   * Returns all existing node Logs based on activity.
-   */
-  async findAllNodeLogs(options: FindManyOptions<NodeLog>): Promise<NodeLog[]> {
-    console.log('works');
-    return await this.nodeLogRepo.find(options);
-  }
-
-  /**
-   * Returns all existing node Logs based on activity.
-   */
-  async findAllUserLogs(options: FindManyOptions<UserLog>): Promise<UserLog[]> {
-    return await this.userLogRepo.find(options);
   }
 }

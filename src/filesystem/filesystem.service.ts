@@ -349,7 +349,9 @@ export class FilesystemService implements OnModuleInit {
       where: { id: nodeId, type: NodeType.FILE },
       relations: ['parent', 'owner'],
     });
+
     const path = join(process.cwd(), DiskFolders.PERM, node.ref);
+
     if (existsSync(path)) {
       const file = createReadStream(path);
       await this.logService.createNodeLog(

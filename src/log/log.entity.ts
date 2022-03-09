@@ -13,7 +13,6 @@ export enum ActivityType {
   USER_REGISTRATION = 'USER_REGISTRATION',
   USER_LOGIN = 'USER_LOGIN',
   USER_UPDATE = 'USER_UPDATE',
-  USER_SUSPENSION = 'USER_SUSPENSION',
   USER_DELETION = 'USER_DELETION',
   FILE_UPLOAD = 'FILE_UPLOAD',
   FILE_DOWNLOAD = 'FILE_DOWNLOAD',
@@ -77,7 +76,7 @@ export class NodeLog extends Log {
   session: Session; // The session of the current user.
 
   @ManyToOne(() => User, (user) => user.nodeOwnerLogs, { onDelete: 'CASCADE' })
-  nodeOwner: User;
+  owner: User;
 
   @ManyToOne(() => User, (user) => user.nodeSharedWithLogs, {
     onDelete: 'CASCADE',
@@ -85,5 +84,5 @@ export class NodeLog extends Log {
   sharedWith: User;
 
   @ManyToOne(() => Link, (link) => link.logs, { onDelete: 'CASCADE' })
-  sharingLink: Link;
+  link: Link;
 }

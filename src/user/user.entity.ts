@@ -79,13 +79,15 @@ export class User {
   @OneToMany(() => Node, (node) => node.owner)
   nodes: Node[];
 
+  // logs
+
   @OneToMany(() => UserLog, (userLog) => userLog.subject)
   subjectLogs: UserLog[];
 
   @OneToMany(() => UserLog, (userLog) => userLog.performer)
   performerLogs: UserLog[];
 
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.nodeOwner)
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.owner)
   nodeOwnerLogs: NodeLog[];
 
   @OneToMany(() => NodeLog, (nodeLog) => nodeLog.curUser)

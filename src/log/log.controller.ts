@@ -1,63 +1,46 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { LogService } from './log.service';
 import { res, ResBody } from '../utils/communication';
-import { UserService } from '../user/user.service';
 
 @Controller('logs')
 export class LogController {
-  constructor(
-    private logService: LogService,
-    private userService: UserService,
-  ) {}
+  constructor(private logService: LogService) {}
 
   /**
    * Gets the target user.
    */
-  @Get('node-logs/:type')
-  async findNodeLogs(@Param('type') type: string): Promise<ResBody> {
-    const logs = await this.logService.findAllNodeLogs({
-      where: { activityType: type },
-    });
-    return res('Successfully got node Logs.', { nodeLogs: logs });
+  @Get('node-logs')
+  async getNodeLogs(): Promise<ResBody> {
+    const logs = await this.logService.findAllNodeLogs();
+    return res('Successfully got node Logs.', { logs: logs });
   }
 
   /**
    * Gets all logs based on the activity type on User Logs
    */
-  @Get('user-logs/:type')
-  async findUserLogs(@Param('type') type: string): Promise<ResBody> {
-    const logs = await this.logService.findAllUserLogs({
-      where: { activityType: type },
-    });
-    return res('Successfully got user logs.', { userLogs: logs });
+  @Get('user-logs')
+  async getUserLogs(): Promise<ResBody> {
+    const logs = await this.logService.findAllUserLogs();
+    return res('Successfully got user logs.', { logs: logs });
   }
 
+  //TODO move this to node controller
   /**
-   * Gets all logs based on the username on Node Logs
+   * Gets all logs related to a node.
    */
-  @Get('node-logs/user/:username')
-  async findNodeLogsbyUser(
-    @Param('username') username: string,
-  ): Promise<ResBody> {
-    const user = await this.userService.findOne({
-      where: { username: username },
-    });
-    const logs = await this.logService.findAllNodeLogs({
-      where: { curUser: user },
-    });
-    return res('Successfully got Node logs for user.', { nodeLogs: logs });
+  @Get('/file-system/:nodeId/logs')
+  async getLogsByNode() {
+    // const logs = await this.fileService.findLogs(nodeId, ...);
+    // return res('Successfully got user logs.', { logs: logs });
   }
 
+  //TODO move this to user controller
   /**
-   * Gets all logs performed by an user on User Logs
+   * Gets all logs related to a user.
    */
-  @Get('user-logs/user/:username')
-  async findUserLogsbyUser(
-    @Param('username') username: string,
-  ): Promise<ResBody> {
-    const logs = await this.logService.findAllUserLogs({
-      where: { performer: username },
-    });
-    return res('Successfully got user logs.', { userLogs: logs });
+  @Get('/users/:username/logs')
+  async getLogsByUser() {
+    // const logs = await this.userService.findLogs(userId, ...);
+    // return res('Successfully got user logs.', { logs: logs });
   }
 }
