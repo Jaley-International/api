@@ -89,7 +89,7 @@ export class UserService {
     curUser: User,
     session: Session,
     body: PreRegisterUserDto,
-  ): Promise<User> {
+  ): Promise<string> {
     if (!(await this.userExists(body.username))) {
       if (!(await this.mailExists(body.email))) {
         const newUser = new User();
@@ -104,7 +104,6 @@ export class UserService {
         newUser.registerKey = hexToBase64Url(
           forge.util.bytesToHex(forge.random.getBytesSync(12)),
         );
-        await this.mailService.sendUserConfirmation(newUser);
         await this.userRepo.save(newUser);
         await this.logService.createUserLog(
           ActivityType.USER_CREATION,
@@ -112,7 +111,7 @@ export class UserService {
           curUser,
           session,
         );
-        return newUser;
+        return newUser.registerKey;
       } else {
         throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
       }
@@ -125,7 +124,7 @@ export class UserService {
    * Creates a new user and returns it.
    * Throws an exception if the email or username is already used.
    */
-  async register(body: RegisterUserDto): Promise<User> {
+  async register(body: RegisterUserDto): Promise<string> {
     const curUser = await this.userRepo.findOne({
       where: { registerKey: body.registerKey },
     });
@@ -146,7 +145,8 @@ export class UserService {
           curUser,
           curUser,
         );
-        return curUser;
+        // TODO replace it with the actual signature (got from client as in whitepaper 4.1)
+        return 'instancePublicKeySignature';
       } else {
         throw err(
           Status.ERROR_INVALID_USER_STATUS,

@@ -77,6 +77,12 @@ export class User {
   @Column({ nullable: true })
   encryptedInstancePublicKey: string;
 
+  @Column({ nullable: true })
+  encryptedInstancePrivateKey: string;
+
+  @Column({ nullable: true })
+  publicSharingKeySignature: string;
+
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];
 

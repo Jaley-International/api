@@ -58,7 +58,7 @@ export class UserController {
 
   /**
    * Pre-registers a new user by an admin user.
-   * Returns to client the newly pre-registered user.
+   * Returns to client the registration key.
    */
   @Post()
   async preregister(
@@ -67,18 +67,26 @@ export class UserController {
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    const user = await this.userService.preregister(curUser, session, body);
-    return res('Successfully pre-registered a new user.', { user: user });
+    const registerKey = await this.userService.preregister(
+      curUser,
+      session,
+      body,
+    );
+    return res('Successfully pre-registered a new user.', {
+      registerKey: registerKey,
+    });
   }
 
   /**
    * Registers a user.
-   * Returns to client the newly created user.
+   * Returns to client the instance public key signature.
    */
   @Post('register')
   async register(@Body() body: RegisterUserDto): Promise<ResBody> {
-    const user = await this.userService.register(body);
-    return res('Successfully created a new user account.', { user: user });
+    const instancePublicKeySignature = await this.userService.register(body);
+    return res('Successfully created a new user account.', {
+      instancePublicKeySignature: instancePublicKeySignature,
+    });
   }
 
   /**
