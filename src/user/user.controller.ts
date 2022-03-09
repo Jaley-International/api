@@ -13,6 +13,7 @@ import {
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
+  ValidationUserDto,
 } from './user.dto';
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
@@ -90,6 +91,21 @@ export class UserController {
   }
 
   /**
+   * Registers a user.
+   * Returns to client the newly created user.
+   */
+  @Post('validate')
+  async validate(
+    @Req() req: Request,
+    @Body() body: ValidationUserDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.userService.validate(curUser, session, body);
+    return res('Successfully created a new user account.', {});
+  }
+
+  /**
    * Authenticate a user.
    * Returns to client its login information.
    */
@@ -155,5 +171,16 @@ export class UserController {
     return res('Successfully extended session duration', {
       expire: newExpiration,
     });
+  }
+
+  /**
+   * Gets all logs based on the username on Node Logs
+   */
+  @Get('node-logs/user/:username')
+  async findNodeLogsbyUser(
+    @Param('username') username: string,
+  ): Promise<ResBody> {
+    const logs = await this.userService.findLogs(username);
+    return res('Successfully got Node logs for user.', { nodeLogs: logs });
   }
 }

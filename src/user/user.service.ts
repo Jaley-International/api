@@ -8,6 +8,7 @@ import {
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
+  ValidationUserDto,
 } from './user.dto';
 import {
   addPadding,
@@ -21,7 +22,7 @@ import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
 import forge from 'node-forge';
 import { LogService } from '../log/log.service';
-import { ActivityType } from '../log/log.entity';
+import { ActivityType, NodeLog, UserLog } from '../log/log.entity';
 
 export interface LoginDetails {
   encryptedMasterKey: string;
@@ -29,6 +30,14 @@ export interface LoginDetails {
   rsaPublicSharingKey: string;
   encryptedSessionIdentifier: string;
   sessionExpire: number;
+}
+
+interface Logs {
+  subjectLogs: UserLog[];
+  performerLogs: UserLog[];
+  nodeOwnerLogs: NodeLog[];
+  nodeCurUserLogs: NodeLog[];
+  nodeSharedWithLogs: NodeLog[];
 }
 
 @Injectable()
@@ -89,35 +98,44 @@ export class UserService {
     curUser: User,
     session: Session,
     body: PreRegisterUserDto,
-  ): Promise<string> {
+  ): Promise<User> {
+    // handling exceptions
     if (!(await this.userExists(body.username))) {
-      if (!(await this.mailExists(body.email))) {
-        const newUser = new User();
-        newUser.username = body.username;
-        newUser.firstName = body.firstName;
-        newUser.lastName = body.lastName;
-        newUser.email = body.email;
-        newUser.group = body.group;
-        newUser.job = body.job;
-        newUser.accessLevel = body.accessLevel;
-        newUser.userStatus = UserStatus.PENDING_REGISTRATION;
-        newUser.registerKey = hexToBase64Url(
-          forge.util.bytesToHex(forge.random.getBytesSync(12)),
-        );
-        await this.userRepo.save(newUser);
-        await this.logService.createUserLog(
-          ActivityType.USER_CREATION,
-          newUser,
-          curUser,
-          session,
-        );
-        return newUser.registerKey;
-      } else {
-        throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
-      }
-    } else {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
+    if (!(await this.mailExists(body.email))) {
+      throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+    }
+
+    // new user object creation
+    const newUser = new User();
+    newUser.username = body.username;
+    newUser.firstName = body.firstName;
+    newUser.lastName = body.lastName;
+    newUser.email = body.email;
+    newUser.group = body.group;
+    newUser.job = body.job;
+    newUser.accessLevel = body.accessLevel;
+    newUser.userStatus = UserStatus.PENDING_REGISTRATION;
+    newUser.registerKey = hexToBase64Url(
+      forge.util.bytesToHex(forge.random.getBytesSync(12)),
+    );
+
+    // sending email to user's mail for him to approve
+    await this.mailService.sendUserConfirmation(newUser);
+
+    // database saving
+    await this.userRepo.save(newUser);
+
+    // new log entry for user creation
+    await this.logService.createUserLog(
+      ActivityType.USER_CREATION,
+      newUser,
+      curUser,
+      session,
+    );
+
+    return newUser;
   }
 
   /**
@@ -137,7 +155,7 @@ export class UserService {
           body.encryptedRsaPrivateSharingKey;
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.encryptedInstancePublicKey = body.encryptedInstancePublicKey;
-        curUser.userStatus = UserStatus.OK;
+        curUser.userStatus = UserStatus.PENDING_VALIDATION;
         curUser.createdAt = Date.now();
         await this.userRepo.save(curUser);
         await this.logService.createUserLog(
@@ -155,6 +173,32 @@ export class UserService {
       }
     } else {
       throw err(Status.ERROR_INVALID_REGISTER_KEY, 'Register key is invalid.');
+    }
+  }
+
+  /**
+   * Validate the user by adding the public Sharing key Signature into the user object and save it.
+   *
+   */
+  async validate(curUser: User, session: Session, body: ValidationUserDto) {
+    const user = await this.userRepo.findOne({
+      where: { username: body.username },
+    });
+    if (user.userStatus === UserStatus.PENDING_VALIDATION) {
+      user.publicSharingKeySignature = body.publicSharingKeySignature;
+      user.userStatus = UserStatus.OK;
+      await this.userRepo.save(user);
+      await this.logService.createUserLog(
+        ActivityType.USER_VALIDATION,
+        user,
+        curUser,
+        session,
+      );
+    } else {
+      throw err(
+        Status.ERROR_INVALID_USER_STATUS,
+        'User has already been registered or is suspended.',
+      );
     }
   }
 
@@ -322,5 +366,25 @@ export class UserService {
       now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
     await this.sessionRepo.save(session);
     return session.expire;
+  }
+
+  async findLogs(username: string): Promise<Logs> {
+    const user = await this.findOne({
+      where: { username: username },
+      relations: [
+        'subjectLogs',
+        'performerLogs',
+        'nodeOwnerLogs',
+        'nodeCurUserLogs',
+        'nodeSharedWithLogs',
+      ],
+    });
+    return {
+      subjectLogs: user.subjectLogs,
+      performerLogs: user.performerLogs,
+      nodeOwnerLogs: user.nodeOwnerLogs,
+      nodeCurUserLogs: user.nodeCurUserLogs,
+      nodeSharedWithLogs: user.nodeSharedWithLogs,
+    };
   }
 }
