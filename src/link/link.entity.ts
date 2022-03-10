@@ -19,6 +19,6 @@ export class Link {
   @ManyToOne(() => Node, (node) => node.links, { onDelete: 'CASCADE' })
   node: Node;
 
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.sharingLink)
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.link)
   logs: NodeLog[];
 }

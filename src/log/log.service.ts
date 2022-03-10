@@ -16,6 +16,20 @@ export class LogService {
   ) {}
 
   /**
+   * Returns all existing node logs.
+   */
+  async findAllNodeLogs(): Promise<NodeLog[]> {
+    return await this.nodeLogRepo.find();
+  }
+
+  /**
+   * Returns all existing user logs.
+   */
+  async findAllUserLogs(): Promise<UserLog[]> {
+    return await this.userLogRepo.find();
+  }
+
+  /**
    * Creates a new user log entry.
    */
   async createUserLog(
@@ -25,14 +39,15 @@ export class LogService {
     session?: Session,
   ): Promise<void> {
     const newLog = new UserLog();
+
     newLog.timestamp = Date.now();
     newLog.logType = LogType.USER;
     newLog.activityType = activityType;
     newLog.subject = subject;
     newLog.performer = performer;
-    if (session) {
-      newLog.session = session;
-    }
+
+    newLog.session = session;
+
     await this.userLogRepo.save(newLog);
   }
 
@@ -46,34 +61,25 @@ export class LogService {
     newParent?: Node,
     curUser?: User,
     session?: Session,
-    nodeOwner?: User,
+    owner?: User,
     sharedWith?: User,
-    sharingLink?: Link,
+    link?: Link,
   ): Promise<void> {
     const newLog = new NodeLog();
+
     newLog.timestamp = Date.now();
     newLog.logType = LogType.NODE;
     newLog.activityType = activityType;
     newLog.node = node;
     newLog.oldParent = oldParent;
-    if (newParent) {
-      newLog.newParent = newParent;
-    }
-    if (curUser) {
-      newLog.curUser = curUser;
-    }
-    if (session) {
-      newLog.session = session;
-    }
-    if (nodeOwner) {
-      newLog.nodeOwner = nodeOwner;
-    }
-    if (sharedWith) {
-      newLog.sharedWith = sharedWith;
-    }
-    if (sharingLink) {
-      newLog.sharingLink = sharingLink;
-    }
+
+    newLog.newParent = newParent;
+    newLog.curUser = curUser;
+    newLog.session = session;
+    newLog.owner = owner;
+    newLog.sharedWith = sharedWith;
+    newLog.link = link;
+
     await this.nodeLogRepo.save(newLog);
   }
 }
