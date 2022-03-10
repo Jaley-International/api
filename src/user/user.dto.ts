@@ -16,17 +16,17 @@ export class AuthenticationDto {
   derivedAuthenticationKey: string;
 }
 
-export class ValidationUserDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  publicSharingKeySignature: string;
-
+export class ValidateUserDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
   @Matches(/^[0-9a-zA-Z-]{3,16}$/)
   username: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  publicSharingKeySignature: string;
 }
 
 export class RegisterUserDto {

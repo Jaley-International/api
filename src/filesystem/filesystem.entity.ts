@@ -50,6 +50,8 @@ export class Node {
   @OneToMany(() => Link, (link) => link.node)
   links: Link[];
 
+  // logs
+
   @OneToMany(() => NodeLog, (nodeLog) => nodeLog.node)
   logs: NodeLog[];
 

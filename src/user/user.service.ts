@@ -8,7 +8,7 @@ import {
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
-  ValidationUserDto,
+  ValidateUserDto,
 } from './user.dto';
 import {
   addPadding,
@@ -32,7 +32,7 @@ export interface LoginDetails {
   sessionExpire: number;
 }
 
-interface Logs {
+export interface Logs {
   subjectLogs: UserLog[];
   performerLogs: UserLog[];
   nodeOwnerLogs: NodeLog[];
@@ -80,7 +80,7 @@ export class UserService {
 
   /**
    * Basic findOne function on Session repository,
-   * but throws an error when no session is found;
+   * but throws an error when no session is found.
    */
   async findOneSession(options: FindOneOptions<Session>): Promise<Session> {
     const session = await this.sessionRepo.findOne(options);
@@ -98,7 +98,7 @@ export class UserService {
     curUser: User,
     session: Session,
     body: PreRegisterUserDto,
-  ): Promise<User> {
+  ): Promise<string> {
     // handling exceptions
     if (!(await this.userExists(body.username))) {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
@@ -121,9 +121,6 @@ export class UserService {
       forge.util.bytesToHex(forge.random.getBytesSync(12)),
     );
 
-    // sending email to user's mail for him to approve
-    await this.mailService.sendUserConfirmation(newUser);
-
     // database saving
     await this.userRepo.save(newUser);
 
@@ -135,7 +132,7 @@ export class UserService {
       session,
     );
 
-    return newUser;
+    return newUser.registerKey;
   }
 
   /**
@@ -146,6 +143,7 @@ export class UserService {
     const curUser = await this.userRepo.findOne({
       where: { registerKey: body.registerKey },
     });
+
     if (curUser) {
       if (curUser.userStatus === UserStatus.PENDING_REGISTRATION) {
         curUser.clientRandomValue = body.clientRandomValue;
@@ -158,11 +156,13 @@ export class UserService {
         curUser.userStatus = UserStatus.PENDING_VALIDATION;
         curUser.createdAt = Date.now();
         await this.userRepo.save(curUser);
+
         await this.logService.createUserLog(
           ActivityType.USER_REGISTRATION,
           curUser,
           curUser,
         );
+
         // TODO replace it with the actual signature (got from client as in whitepaper 4.1)
         return 'instancePublicKeySignature';
       } else {
@@ -177,17 +177,19 @@ export class UserService {
   }
 
   /**
-   * Validate the user by adding the public Sharing key Signature into the user object and save it.
-   *
+   * Validates a new user.
+   * Saves the Public Sharing Key Signature to the user.
    */
-  async validate(curUser: User, session: Session, body: ValidationUserDto) {
+  async validate(curUser: User, session: Session, body: ValidateUserDto) {
     const user = await this.userRepo.findOne({
       where: { username: body.username },
     });
+
     if (user.userStatus === UserStatus.PENDING_VALIDATION) {
       user.publicSharingKeySignature = body.publicSharingKeySignature;
       user.userStatus = UserStatus.OK;
       await this.userRepo.save(user);
+
       await this.logService.createUserLog(
         ActivityType.USER_VALIDATION,
         user,
@@ -197,7 +199,7 @@ export class UserService {
     } else {
       throw err(
         Status.ERROR_INVALID_USER_STATUS,
-        'User has already been registered or is suspended.',
+        "User has already been validated, or hasn't been registered yet, or is suspended.",
       );
     }
   }
@@ -368,6 +370,9 @@ export class UserService {
     return session.expire;
   }
 
+  /**
+   * Returns all logs related to a user.
+   */
   async findLogs(username: string): Promise<Logs> {
     const user = await this.findOne({
       where: { username: username },
