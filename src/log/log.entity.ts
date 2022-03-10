@@ -29,13 +29,13 @@ export abstract class Log {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'bigint' })
+  @Column({ type: 'bigint', update: false })
   timestamp: number;
 
-  @Column({ type: 'enum', enum: LogType })
+  @Column({ type: 'enum', enum: LogType, update: false })
   logType: LogType;
 
-  @Column({ type: 'enum', enum: ActivityType })
+  @Column({ type: 'enum', enum: ActivityType, update: false })
   activityType: ActivityType;
 }
 

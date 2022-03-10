@@ -7,16 +7,16 @@ export class LogController {
   constructor(private logService: LogService) {}
 
   /**
-   * Gets the target user.
+   * Gets all node logs.
    */
   @Get('node-logs')
   async getNodeLogs(): Promise<ResBody> {
     const logs = await this.logService.findAllNodeLogs();
-    return res('Successfully got node Logs.', { logs: logs });
+    return res('Successfully got node logs.', { logs: logs });
   }
 
   /**
-   * Gets all logs based on the activity type on User Logs
+   * Gets all user logs.
    */
   @Get('user-logs')
   async getUserLogs(): Promise<ResBody> {
@@ -31,7 +31,7 @@ export class LogController {
   @Get('/file-system/:nodeId/logs')
   async getLogsByNode() {
     // const logs = await this.fileService.findLogs(nodeId, ...);
-    // return res('Successfully got user logs.', { logs: logs });
+    // return res('Successfully got node logs.', { logs: logs });
   }
 
   //TODO move this to user controller
@@ -40,7 +40,7 @@ export class LogController {
    */
   @Get('/users/:username/logs')
   async getLogsByUser() {
-    // const logs = await this.userService.findLogs(userId, ...);
+    // const logs = await this.userService.findLogs(username, ...);
     // return res('Successfully got user logs.', { logs: logs });
   }
 }

@@ -16,14 +16,14 @@ export class LogService {
   ) {}
 
   /**
-   * Returns all existing node Logs based on activity.
+   * Returns all existing node logs.
    */
   async findAllNodeLogs(): Promise<NodeLog[]> {
     return await this.nodeLogRepo.find();
   }
 
   /**
-   * Returns all existing node Logs based on activity.
+   * Returns all existing user logs.
    */
   async findAllUserLogs(): Promise<UserLog[]> {
     return await this.userLogRepo.find();
@@ -46,9 +46,7 @@ export class LogService {
     newLog.subject = subject;
     newLog.performer = performer;
 
-    if (session) {
-      newLog.session = session;
-    }
+    newLog.session = session;
 
     await this.userLogRepo.save(newLog);
   }
@@ -63,9 +61,9 @@ export class LogService {
     newParent?: Node,
     curUser?: User,
     session?: Session,
-    nodeOwner?: User,
+    owner?: User,
     sharedWith?: User,
-    sharingLink?: Link,
+    link?: Link,
   ): Promise<void> {
     const newLog = new NodeLog();
 
@@ -78,9 +76,9 @@ export class LogService {
     newLog.newParent = newParent;
     newLog.curUser = curUser;
     newLog.session = session;
-    newLog.owner = nodeOwner;
+    newLog.owner = owner;
     newLog.sharedWith = sharedWith;
-    newLog.link = sharingLink;
+    newLog.link = link;
 
     await this.nodeLogRepo.save(newLog);
   }
