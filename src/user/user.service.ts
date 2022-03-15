@@ -100,10 +100,10 @@ export class UserService {
     body: PreRegisterUserDto,
   ): Promise<string> {
     // handling exceptions
-    if (!(await this.userExists(body.username))) {
+    if (await this.userExists(body.username)) {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
-    if (!(await this.mailExists(body.email))) {
+    if (await this.mailExists(body.email)) {
       throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
     }
 
