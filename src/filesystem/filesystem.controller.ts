@@ -206,4 +206,13 @@ export class FilesystemController {
     // not encapsulated in a response body like the other routes
     return await this.fileService.getFile(curUser, session, nodeId);
   }
+
+  /**
+   * Gets all logs related to a node.
+   */
+  @Get('/file-system/:nodeId/logs')
+  async getLogsByNode(@Param('nodeId') nodeId: string): Promise<ResBody> {
+    const logs = await this.fileService.findLogs(nodeId);
+    return res('Successfully got node logs.', { logs: logs });
+  }
 }

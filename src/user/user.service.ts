@@ -32,7 +32,7 @@ export interface LoginDetails {
   sessionExpire: number;
 }
 
-export interface Logs {
+export interface UserLogs {
   subjectLogs: UserLog[];
   performerLogs: UserLog[];
   nodeOwnerLogs: NodeLog[];
@@ -373,7 +373,7 @@ export class UserService {
   /**
    * Returns all logs related to a user.
    */
-  async findLogs(username: string): Promise<Logs> {
+  async findLogs(username: string): Promise<UserLogs> {
     const user = await this.findOne({
       where: { username: username },
       relations: [

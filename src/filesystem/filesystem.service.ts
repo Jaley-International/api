@@ -21,8 +21,14 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
-import { ActivityType } from '../log/log.entity';
+import { ActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
+
+interface NodeLogs {
+  logs: NodeLog[];
+  oldParentLogs: NodeLog[];
+  newParentLogs: NodeLog[];
+}
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -366,5 +372,17 @@ export class FilesystemService implements OnModuleInit {
       return new StreamableFile(file);
     }
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
+  }
+
+  async findLogs(nodeId: string): Promise<NodeLogs> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['logs', 'oldParentLogs', 'newParentLogs'],
+    });
+    return {
+      logs: node.logs,
+      oldParentLogs: node.oldParentLogs,
+      newParentLogs: node.newParentLogs,
+    };
   }
 }
