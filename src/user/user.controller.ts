@@ -102,8 +102,8 @@ export class UserController {
   }
 
   /**
-   * Authenticate a user.
-   * Returns to client its login information.
+   * Authenticates a user.
+   * Returns to client the user's login information.
    */
   @Post('login')
   async login(@Body() body: AuthenticationDto): Promise<ResBody> {
@@ -176,5 +176,16 @@ export class UserController {
   async getLogsByUser(@Param('username') username: string): Promise<ResBody> {
     const logs = await this.userService.findLogs(username);
     return res('Successfully got user logs.', { logs: logs });
+  }
+
+  /**
+   * Gets the node recipient's public sharing key and public sharing key signature.
+   */
+  @Get(':username/sharing-keys')
+  async getSharingKeys(@Param('username') username: string): Promise<ResBody> {
+    const keys = await this.userService.getSharingKeys(username);
+    return res("Successfully got node recipient's sharing keys.", {
+      keys: keys,
+    });
   }
 }

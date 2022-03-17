@@ -40,6 +40,11 @@ export interface Logs {
   nodeSharedWithLogs: NodeLog[];
 }
 
+export interface SharingKeys {
+  publicSharingKey: string;
+  publicSharingKeySignature: string;
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -91,7 +96,7 @@ export class UserService {
   }
 
   /**
-   * Pre-registers a new user by an admin user and returns it.
+   * Pre-registers a new user by an admin user and returns new user's registration key.
    * Throws an exception if the email or username is already used.
    */
   async preregister(
@@ -136,7 +141,7 @@ export class UserService {
   }
 
   /**
-   * Creates a new user and returns it.
+   * Creates a new user and returns their instance public key signature.
    * Throws an exception if the email or username is already used.
    */
   async register(body: RegisterUserDto): Promise<string> {
@@ -178,7 +183,7 @@ export class UserService {
 
   /**
    * Validates a new user.
-   * Saves the Public Sharing Key Signature to the user.
+   * Saves the user's public sharing key signature.
    */
   async validate(curUser: User, session: Session, body: ValidateUserDto) {
     const user = await this.userRepo.findOne({
@@ -278,6 +283,7 @@ export class UserService {
     const user = await this.userRepo.findOne({
       where: { username: username },
     });
+
     return sha256(
       addPadding(
         (user ? user.registerKey : username) +
@@ -390,6 +396,20 @@ export class UserService {
       nodeOwnerLogs: user.nodeOwnerLogs,
       nodeCurUserLogs: user.nodeCurUserLogs,
       nodeSharedWithLogs: user.nodeSharedWithLogs,
+    };
+  }
+
+  /**
+   * Returns the public sharing key and public sharing key signature of the node recipient.
+   */
+  async getSharingKeys(username: string): Promise<SharingKeys> {
+    const user = await this.findOne({
+      where: { username: username },
+    });
+
+    return {
+      publicSharingKey: user.rsaPublicSharingKey,
+      publicSharingKeySignature: user.publicSharingKeySignature,
     };
   }
 }
