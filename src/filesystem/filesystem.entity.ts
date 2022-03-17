@@ -11,6 +11,7 @@ import {
 import { User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
 import { NodeLog } from '../log/log.entity';
+import { Share } from '../share/share.entity';
 
 export enum NodeType {
   FILE = 'FILE',
@@ -60,6 +61,13 @@ export class Node {
 
   @OneToMany(() => NodeLog, (nodeLog) => nodeLog.newParent)
   newParentLogs: NodeLog[];
+
+  // shares
+
+  @OneToMany(() => Share, (share) => share.node)
+  shares: Share[];
+
+  // tree relations
 
   @TreeParent({ onDelete: 'CASCADE' })
   parent: Node;

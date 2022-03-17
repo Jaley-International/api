@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
 import { NodeLog, UserLog } from '../log/log.entity';
+import { Share } from '../share/share.entity';
 
 export enum AccessLevel {
   ADMINISTRATOR = 'ADMINISTRATOR',
@@ -105,6 +106,14 @@ export class User {
 
   @OneToMany(() => NodeLog, (nodeLog) => nodeLog.sharedWith)
   nodeSharedWithLogs: NodeLog[];
+
+  // shares
+
+  @OneToMany(() => Share, (share) => share.sender)
+  senderShares: Share[];
+
+  @OneToMany(() => Share, (share) => share.recipient)
+  recipientShares: Share[];
 }
 
 @Entity()
@@ -123,6 +132,8 @@ export class Session {
 
   @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
   user: User;
+
+  // logs
 
   @OneToMany(() => UserLog, (userLog) => userLog.session)
   userLogs: UserLog[];
