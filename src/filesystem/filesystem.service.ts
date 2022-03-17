@@ -24,7 +24,7 @@ import { Link } from '../link/link.entity';
 import { ActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
 
-interface NodeLogs {
+export interface Logs {
   logs: NodeLog[];
   oldParentLogs: NodeLog[];
   newParentLogs: NodeLog[];
@@ -374,7 +374,10 @@ export class FilesystemService implements OnModuleInit {
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
   }
 
-  async findLogs(nodeId: string): Promise<NodeLogs> {
+  /**
+   * Returns all logs related to a node.
+   */
+  async findLogs(nodeId: number): Promise<Logs> {
     const node = await this.findOne({
       where: { id: nodeId },
       relations: ['logs', 'oldParentLogs', 'newParentLogs'],

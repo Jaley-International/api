@@ -210,8 +210,8 @@ export class FilesystemController {
   /**
    * Gets all logs related to a node.
    */
-  @Get('/file-system/:nodeId/logs')
-  async getLogsByNode(@Param('nodeId') nodeId: string): Promise<ResBody> {
+  @Get(':nodeId/logs')
+  async getLogsByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
     const logs = await this.fileService.findLogs(nodeId);
     return res('Successfully got node logs.', { logs: logs });
   }

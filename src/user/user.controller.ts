@@ -172,7 +172,7 @@ export class UserController {
   /**
    * Gets all logs related to a user.
    */
-  @Get('/users/:username/logs')
+  @Get(':username/logs')
   async getLogsByUser(@Param('username') username: string): Promise<ResBody> {
     const logs = await this.userService.findLogs(username);
     return res('Successfully got user logs.', { logs: logs });
