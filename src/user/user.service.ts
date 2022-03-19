@@ -25,9 +25,7 @@ import { LogService } from '../log/log.service';
 import { ActivityType, NodeLog, UserLog } from '../log/log.entity';
 
 export interface LoginDetails {
-  encryptedMasterKey: string;
-  encryptedRsaPrivateSharingKey: string;
-  rsaPublicSharingKey: string;
+  user: User;
   encryptedSessionIdentifier: string;
   sessionExpire: number;
 }
@@ -105,10 +103,10 @@ export class UserService {
     body: PreRegisterUserDto,
   ): Promise<string> {
     // handling exceptions
-    if (!(await this.userExists(body.username))) {
+    if (await this.userExists(body.username)) {
       throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
-    if (!(await this.mailExists(body.email))) {
+    if (await this.mailExists(body.email)) {
       throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
     }
 
@@ -326,9 +324,7 @@ export class UserService {
         );
         // returning encryption keys and connection information
         return {
-          encryptedMasterKey: user.encryptedMasterKey,
-          encryptedRsaPrivateSharingKey: user.encryptedRsaPrivateSharingKey,
-          rsaPublicSharingKey: user.rsaPublicSharingKey,
+          user: user,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
             session.id,

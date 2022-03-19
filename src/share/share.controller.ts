@@ -5,7 +5,7 @@ import { getSession, getSessionUser } from '../utils/session';
 import { res } from '../utils/communication';
 import { ShareNodeDto } from './share.dto';
 
-@Controller('share')
+@Controller('shares')
 export class ShareController {
   constructor(private shareService: ShareService) {}
 
@@ -14,9 +14,11 @@ export class ShareController {
    */
   @Post()
   async shareNode(@Req() req: Request, @Body() body: ShareNodeDto) {
-    const curUser = await getSessionUser(req);
-    const session = await getSession(req);
-    await this.shareService.share(curUser, session, body);
+    await this.shareService.share(
+      await getSessionUser(req),
+      await getSession(req),
+      body,
+    );
     return res('Successfully shared a node.', {});
   }
 }

@@ -215,4 +215,10 @@ export class FilesystemController {
     const logs = await this.fileService.findLogs(nodeId);
     return res('Successfully got node logs.', { logs: logs });
   }
+
+  @Get(':nodeId/shares')
+  async getSharesByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
+    const shares = await this.fileService.findShares(nodeId);
+    return res('Successfully got shared users.', { shares: shares });
+  }
 }

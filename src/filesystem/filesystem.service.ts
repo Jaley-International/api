@@ -23,6 +23,7 @@ import { Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
 import { ActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
+import { Share } from '../share/share.entity';
 
 export interface Logs {
   logs: NodeLog[];
@@ -387,5 +388,16 @@ export class FilesystemService implements OnModuleInit {
       oldParentLogs: node.oldParentLogs,
       newParentLogs: node.newParentLogs,
     };
+  }
+
+  /**
+   * Returns all shares of the target node.
+   */
+  async findShares(nodeId: number): Promise<Share[]> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['shares', 'shares.recipient'],
+    });
+    return node.shares;
   }
 }

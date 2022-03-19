@@ -7,10 +7,10 @@ export class Share {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ length: 1000 })
   shareKey: string;
 
-  @Column()
+  @Column({ length: 1000 })
   shareSignature: string;
 
   @ManyToOne(() => User, (user) => user.senderShares, { onDelete: 'CASCADE' })
