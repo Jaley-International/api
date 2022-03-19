@@ -19,7 +19,7 @@ import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { Session, User } from '../user/user.entity';
+import { AccessLevel, Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
 import { ActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
@@ -91,20 +91,41 @@ export class FilesystemService implements OnModuleInit {
    * Returns the descendant tree of the targeted node by id.
    * If no node id is passed in argument, returns the whole filesystem.
    */
-  async getFileSystem(curUser: User, nodeId?: number): Promise<Node> {
+  async getFileSystem(curUser: User, nodeId?: number): Promise<any> {
     let node: Node;
+
     if (nodeId) {
-      node = await this.findOne({ where: { id: nodeId } });
+      node = await this.findOne({
+        where: { id: nodeId },
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      });
     } else {
       node = await this.findAll();
     }
-    if (node.parent && node.owner !== curUser) {
-      throw err(
-        Status.ERROR_INVALID_NODE_OWNER,
-        'Current user is not the owner of the node.',
-      );
+
+    if (node.parent) {
+      if (
+        node.owner.username !== curUser.username &&
+        curUser.accessLevel !== AccessLevel.ADMINISTRATOR
+      ) {
+        throw err(
+          Status.ERROR_INVALID_NODE_OWNER,
+          'Current user is not the owner of the node.',
+        );
+      }
     }
-    return await this.nodeRepo.findDescendantsTree(node);
+
+    return {
+      owner: node.owner,
+      parentOwner: node.parent ? node.parent.owner : null,
+      nodes: await this.nodeRepo.findDescendantsTree(node),
+    };
   }
 
   /**
