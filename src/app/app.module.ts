@@ -15,6 +15,7 @@ import { LinkModule } from '../link/link.module';
 import { LinkController } from '../link/link.controller';
 import { MailModule } from '../mail/mail.module';
 import { LogModule } from '../log/log.module';
+import { ShareModule } from '../share/share.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LogModule } from '../log/log.module';
     LinkModule,
     MailModule,
     LogModule,
+    ShareModule,
   ],
 })
 export class AppModule implements NestModule {
