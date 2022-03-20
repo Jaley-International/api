@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
+import {
+  FindManyOptions,
+  FindOneOptions,
+  getConnection,
+  MoreThan,
+  Repository,
+} from 'typeorm';
 import { Session, User, UserStatus } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
@@ -65,8 +71,8 @@ export class UserService {
   /**
    * Returns all existing users.
    */
-  async findAll(): Promise<User[]> {
-    return await this.userRepo.find();
+  async findAll(options?: FindManyOptions): Promise<User[]> {
+    return await this.userRepo.find(options);
   }
 
   /**

@@ -24,11 +24,18 @@ import { Link } from '../link/link.entity';
 import { ActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
 import { Share } from '../share/share.entity';
+import { UserService } from '../user/user.service';
+import { FindTreeOptions } from 'typeorm/find-options/FindTreeOptions';
 
 export interface Logs {
   logs: NodeLog[];
   oldParentLogs: NodeLog[];
   newParentLogs: NodeLog[];
+}
+
+interface FileSystemResponse {
+  adminusers: User[];
+  node: Node;
 }
 
 @Injectable()
@@ -37,6 +44,7 @@ export class FilesystemService implements OnModuleInit {
     @InjectRepository(Node)
     private nodeRepo: TreeRepository<Node>,
     private logService: LogService,
+    private userService: UserService,
   ) {}
 
   /**
@@ -67,8 +75,8 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Returns all the file system tree.
    */
-  private async findAll(): Promise<Node> {
-    const data = await this.nodeRepo.findTrees();
+  private async findAll(options?: FindTreeOptions): Promise<Node> {
+    const data = await this.nodeRepo.findTrees(options);
     if (!data) {
       throw err(Status.ERROR_NODE_NOT_FOUND, 'Empty file system.');
     }
@@ -91,7 +99,10 @@ export class FilesystemService implements OnModuleInit {
    * Returns the descendant tree of the targeted node by id.
    * If no node id is passed in argument, returns the whole filesystem.
    */
-  async getFileSystem(curUser: User, nodeId?: number): Promise<any> {
+  async getFileSystem(
+    curUser: User,
+    nodeId?: number,
+  ): Promise<FileSystemResponse> {
     let node: Node;
 
     if (nodeId) {
@@ -106,7 +117,15 @@ export class FilesystemService implements OnModuleInit {
         ],
       });
     } else {
-      node = await this.findAll();
+      node = await this.findAll({
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      });
     }
 
     if (node.parent) {
@@ -120,11 +139,13 @@ export class FilesystemService implements OnModuleInit {
         );
       }
     }
+    const adminUsers = await this.userService.findAll({
+      where: { AccessLevel: AccessLevel.ADMINISTRATOR },
+    });
 
     return {
-      owner: node.owner,
-      parentOwner: node.parent ? node.parent.owner : null,
-      nodes: await this.nodeRepo.findDescendantsTree(node),
+      adminusers: adminUsers,
+      node: await this.nodeRepo.findDescendantsTree(node),
     };
   }
 
