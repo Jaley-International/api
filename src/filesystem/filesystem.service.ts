@@ -34,7 +34,7 @@ export interface Logs {
 }
 
 interface FileSystemResponse {
-  AuthorizedUsers: User[];
+  authorizedUsers: User[];
   node: Node;
 }
 
@@ -128,25 +128,40 @@ export class FilesystemService implements OnModuleInit {
       });
     }
 
-    if (node.parent) {
-      if (
-        node.owner.username !== curUser.username &&
-        curUser.accessLevel !== AccessLevel.ADMINISTRATOR
-      ) {
-        throw err(
-          Status.ERROR_INVALID_NODE_OWNER,
-          'Current user is not the owner of the node.',
-        );
-      }
+    // checking if user is in the share list of the node
+    let shared = false;
+    for (const share of node.shares)
+      if (share.recipient.username === curUser.username) shared = true;
+
+    if (
+      node.parent &&
+      !shared &&
+      node.owner.username !== curUser.username &&
+      curUser.accessLevel !== AccessLevel.ADMINISTRATOR
+    ) {
+      throw err(
+        Status.ERROR_INVALID_NODE_OWNER,
+        'Current user is not the owner of the node.',
+      );
     }
 
     const adminUsers = await this.userService.findAll({
-      where: { AccessLevel: AccessLevel.ADMINISTRATOR },
+      where: { accessLevel: AccessLevel.ADMINISTRATOR },
     });
+    // add from admin list the users contained in the node
     const AuthorizedUsers = getAuthorizedUsers(node, adminUsers);
+
     return {
-      AuthorizedUsers: AuthorizedUsers,
-      node: await this.nodeRepo.findDescendantsTree(node),
+      authorizedUsers: AuthorizedUsers,
+      node: await this.nodeRepo.findDescendantsTree(node, {
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      }),
     };
   }
 
@@ -157,13 +172,18 @@ export class FilesystemService implements OnModuleInit {
   async getNodeParentList(curUser: User, nodeId: number) {
     const node = await this.findOne({ where: { id: nodeId } });
     const path = await this.nodeRepo.findAncestors(node, {
-      relations: ['owner'],
+      relations: [
+        'owner',
+        'parent',
+        'parent.owner',
+        'shares',
+        'shares.recipient',
+      ],
     });
 
     return path
       .filter((n) => !n.owner || n.owner.username === curUser.username)
       .map((n) => {
-        delete n.owner;
         return n;
       });
   }

@@ -52,7 +52,10 @@ export class FilesystemController {
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const filesystem = await this.fileService.getFileSystem(curUser, nodeId);
-    return res("Successfully got node's tree", { filesystem: filesystem });
+    return res("Successfully got node's tree", {
+      filesystem: filesystem.node,
+      authorizedUsers: filesystem.authorizedUsers,
+    });
   }
 
   /**

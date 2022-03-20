@@ -63,11 +63,6 @@ export class RegisterUserDto {
   @IsDefined()
   @IsString()
   rsaPublicSharingKey: string;
-
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  encryptedInstancePublicKey: string;
 }
 
 export class PreRegisterUserDto {
