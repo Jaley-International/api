@@ -34,7 +34,7 @@ export interface Logs {
 }
 
 interface FileSystemResponse {
-  adminusers: User[];
+  AuthorizedUsers: User[];
   node: Node;
 }
 
@@ -139,12 +139,13 @@ export class FilesystemService implements OnModuleInit {
         );
       }
     }
+
     const adminUsers = await this.userService.findAll({
       where: { AccessLevel: AccessLevel.ADMINISTRATOR },
     });
-
+    const AuthorizedUsers = getAuthorizedUsers(node, adminUsers);
     return {
-      adminusers: adminUsers,
+      AuthorizedUsers: AuthorizedUsers,
       node: await this.nodeRepo.findDescendantsTree(node),
     };
   }
@@ -442,4 +443,20 @@ export class FilesystemService implements OnModuleInit {
     });
     return node.shares;
   }
+}
+
+function getAuthorizedUsers(node: Node, users: User[]): User[] {
+  // Return distinct list of users if root folder is reached
+  if (node.parent === null)
+    return users.filter((user, index, self) => self.indexOf(user) === index);
+
+  // Add node owner
+  users.push(node.owner);
+
+  // Add authorised users
+  node.shares.forEach((share) => {
+    users.push(share.recipient);
+  });
+
+  return getAuthorizedUsers(node.parent, users);
 }
