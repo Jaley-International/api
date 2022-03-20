@@ -19,14 +19,27 @@ export class LogService {
    * Returns all existing node logs.
    */
   async findAllNodeLogs(): Promise<NodeLog[]> {
-    return await this.nodeLogRepo.find();
+    return await this.nodeLogRepo.find({
+      relations: [
+        'node',
+        'oldParent',
+        'newParent',
+        'curUser',
+        'session',
+        'owner',
+        'sharedWith',
+        'link',
+      ],
+    });
   }
 
   /**
    * Returns all existing user logs.
    */
   async findAllUserLogs(): Promise<UserLog[]> {
-    return await this.userLogRepo.find();
+    return await this.userLogRepo.find({
+      relations: ['subject', 'performer', 'session'],
+    });
   }
 
   /**
