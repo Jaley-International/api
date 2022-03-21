@@ -22,6 +22,9 @@ export class LogService {
     return await this.nodeLogRepo.find({
       relations: [
         'node',
+        'node.shares',
+        'node.shares.recipient',
+        'node.owner',
         'oldParent',
         'newParent',
         'curUser',

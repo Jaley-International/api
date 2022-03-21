@@ -149,7 +149,7 @@ export class FilesystemService implements OnModuleInit {
       where: { accessLevel: AccessLevel.ADMINISTRATOR },
     });
     // add from admin list the users contained in the node
-    const AuthorizedUsers = getAuthorizedUsers(node, adminUsers);
+    const AuthorizedUsers = await this.getAuthorizedUsers(node, adminUsers);
 
     return {
       authorizedUsers: AuthorizedUsers,
@@ -463,20 +463,26 @@ export class FilesystemService implements OnModuleInit {
     });
     return node.shares;
   }
-}
 
-function getAuthorizedUsers(node: Node, users: User[]): User[] {
-  // Return distinct list of users if root folder is reached
-  if (node.parent === null)
-    return users.filter((user, index, self) => self.indexOf(user) === index);
+  private async getAuthorizedUsers(node: Node, users: User[]): Promise<User[]> {
+    // Return distinct list of users if root folder is reached
+    if (!node)
+      return users.filter((user, index, self) => self.indexOf(user) === index);
 
-  // Add node owner
-  users.push(node.owner);
+    // add shares relation to current node
+    node = await this.findOne({
+      where: { id: node.id },
+      relations: ['shares'],
+    });
 
-  // Add authorised users
-  node.shares.forEach((share) => {
-    users.push(share.recipient);
-  });
+    // Add node owner
+    users.push(node.owner);
 
-  return getAuthorizedUsers(node.parent, users);
+    // Add authorised users
+    node.shares.forEach((share) => {
+      users.push(share.recipient);
+    });
+
+    return this.getAuthorizedUsers(node.parent, users);
+  }
 }
