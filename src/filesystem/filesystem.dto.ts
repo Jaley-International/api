@@ -33,7 +33,7 @@ export class CreateFolderDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
-  @Matches(/^[0-9a-zA-Z]+$/)
+  @Matches(/^[0-9a-zA-Z]*$/)
   parentEncryptedKey: string;
 
   @ApiProperty()
@@ -62,6 +62,12 @@ export class UpdateParentDto {
   @IsDefined()
   @IsInt()
   newParentId: number;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  @Matches(/^[0-9a-f]*$/)
+  newParentEncryptedKey: string;
 }
 
 export class UpdateRefDto {
@@ -70,4 +76,14 @@ export class UpdateRefDto {
   @IsString()
   @IsNotEmpty()
   newRef: string;
+
+  @ApiProperty()
+  @IsDefined()
+  @IsString()
+  newEncryptedMetadata: string;
+
+  @ApiProperty()
+  @IsString()
+  @Matches(/^[0-9a-f]*$/)
+  newTag: string;
 }

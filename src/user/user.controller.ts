@@ -13,11 +13,16 @@ import {
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
+  ValidateUserDto,
 } from './user.dto';
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import { getHeaderSessionId, getSessionUser } from '../utils/session';
+import {
+  getHeaderSessionId,
+  getSession,
+  getSessionUser,
+} from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -54,7 +59,7 @@ export class UserController {
 
   /**
    * Pre-registers a new user by an admin user.
-   * Returns to client the newly pre-registered user.
+   * Returns to client the registration key.
    */
   @Post()
   async preregister(
@@ -62,23 +67,43 @@ export class UserController {
     @Body() body: PreRegisterUserDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    const user = await this.userService.preregister(curUser, body);
-    return res('Successfully pre-registered a new user.', { user: user });
+    const session = await getSession(req);
+    const registerKey = await this.userService.preregister(
+      curUser,
+      session,
+      body,
+    );
+    return res('Successfully pre-registered a new user.', {
+      registerKey: registerKey,
+    });
   }
 
   /**
-   * Registers a user.
-   * Returns to client the newly created user.
+   * Registers a new user.
+   * Returns to client the instance public key signature.
    */
   @Post('register')
   async register(@Body() body: RegisterUserDto): Promise<ResBody> {
-    const user = await this.userService.register(body);
-    return res('Successfully created a new user account.', { user: user });
+    const instancePublicKeySignature = await this.userService.register(body);
+    return res('Successfully registered a new user.', {
+      instancePublicKeySignature: instancePublicKeySignature,
+    });
   }
 
   /**
-   * Authenticate a user.
-   * Returns to client its login information.
+   * Validates a new user.
+   */
+  @Post('validate')
+  async validate(@Req() req: Request, @Body() body: ValidateUserDto) {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.userService.validate(curUser, session, body);
+    return res('Successfully validated a new user.', {});
+  }
+
+  /**
+   * Authenticates a user.
+   * Returns to client the user's login information.
    */
   @Post('login')
   async login(@Body() body: AuthenticationDto): Promise<ResBody> {
@@ -92,10 +117,18 @@ export class UserController {
    */
   @Patch(':username')
   async update(
+    @Req() req: Request,
     @Param('username') username: string,
     @Body() body: UpdateUserDto,
   ): Promise<ResBody> {
-    const user = await this.userService.update(username, body);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    const user = await this.userService.update(
+      curUser,
+      session,
+      username,
+      body,
+    );
     return res('Successfully updated user account data.', { user: user });
   }
 
@@ -104,8 +137,13 @@ export class UserController {
    * Returns to client the deleted user.
    */
   @Delete(':username')
-  async delete(@Param('username') username: string): Promise<ResBody> {
-    const user = await this.userService.delete(username);
+  async delete(
+    @Req() req: Request,
+    @Param('username') username: string,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    const user = await this.userService.delete(curUser, session, username);
     return res('Successfully deleted user.', { user: user });
   }
 
@@ -128,6 +166,26 @@ export class UserController {
     const newExpiration = await this.userService.extendSession(sessionId);
     return res('Successfully extended session duration', {
       expire: newExpiration,
+    });
+  }
+
+  /**
+   * Gets all logs related to a user.
+   */
+  @Get(':username/logs')
+  async getLogsByUser(@Param('username') username: string): Promise<ResBody> {
+    const logs = await this.userService.findLogs(username);
+    return res('Successfully got user logs.', { logs: logs });
+  }
+
+  /**
+   * Gets the node recipient's public sharing key and public sharing key signature.
+   */
+  @Get(':username/sharing-keys')
+  async getSharingKeys(@Param('username') username: string): Promise<ResBody> {
+    const keys = await this.userService.getSharingKeys(username);
+    return res("Successfully got node recipient's sharing keys.", {
+      keys: keys,
     });
   }
 }

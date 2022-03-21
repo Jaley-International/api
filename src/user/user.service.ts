@@ -1,34 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, getConnection, MoreThan, Repository } from 'typeorm';
-import { AccessLevel, Session, User, UserStatus } from './user.entity';
+import {
+  FindManyOptions,
+  FindOneOptions,
+  getConnection,
+  MoreThan,
+  Repository,
+} from 'typeorm';
+import { Session, User, UserStatus } from './user.entity';
 import { Node } from '../filesystem/filesystem.entity';
 import {
   AuthenticationDto,
   PreRegisterUserDto,
   RegisterUserDto,
   UpdateUserDto,
+  ValidateUserDto,
 } from './user.dto';
 import {
   addPadding,
   generateSessionIdentifier,
   hexToBase64Url,
-  INSTANCE_ID,
   rsaPublicEncrypt,
-  SERVER_RANDOM_VALUE,
   sha256,
   sha512,
 } from 'src/utils/security';
 import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
 import forge from 'node-forge';
+import { LogService } from '../log/log.service';
+import { ActivityType, NodeLog, UserLog } from '../log/log.entity';
 
 export interface LoginDetails {
-  encryptedMasterKey: string;
-  encryptedRsaPrivateSharingKey: string;
-  rsaPublicSharingKey: string;
+  user: User;
   encryptedSessionIdentifier: string;
   sessionExpire: number;
+}
+
+export interface Logs {
+  subjectLogs: UserLog[];
+  performerLogs: UserLog[];
+  nodeOwnerLogs: NodeLog[];
+  nodeCurUserLogs: NodeLog[];
+  nodeSharedWithLogs: NodeLog[];
+}
+
+export interface SharingKeys {
+  publicSharingKey: string;
+  publicSharingKeySignature: string;
 }
 
 @Injectable()
@@ -39,6 +57,7 @@ export class UserService {
     @InjectRepository(Session)
     private sessionRepo: Repository<Session>,
     private mailService: MailService,
+    private logService: LogService,
   ) {}
 
   private async mailExists(email: string): Promise<boolean> {
@@ -52,8 +71,8 @@ export class UserService {
   /**
    * Returns all existing users.
    */
-  async findAll(): Promise<User[]> {
-    return await this.userRepo.find();
+  async findAll(options?: FindManyOptions): Promise<User[]> {
+    return await this.userRepo.find(options);
   }
 
   /**
@@ -70,7 +89,7 @@ export class UserService {
 
   /**
    * Basic findOne function on Session repository,
-   * but throws an error when no session is found;
+   * but throws an error when no session is found.
    */
   async findOneSession(options: FindOneOptions<Session>): Promise<Session> {
     const session = await this.sessionRepo.findOne(options);
@@ -81,53 +100,59 @@ export class UserService {
   }
 
   /**
-   * Pre-registers a new user by an admin user and returns it.
+   * Pre-registers a new user by an admin user and returns new user's registration key.
    * Throws an exception if the email or username is already used.
-   * Throws an exception if the current user is not an admin.
    */
-  async preregister(curUser: User, body: PreRegisterUserDto): Promise<User> {
-    if (curUser.accessLevel === AccessLevel.ADMINISTRATOR) {
-      if (!(await this.userExists(body.username))) {
-        if (!(await this.mailExists(body.email))) {
-          const newUser = new User();
-          newUser.username = body.username;
-          newUser.firstName = body.firstName;
-          newUser.lastName = body.lastName;
-          newUser.email = body.email;
-          newUser.group = body.group;
-          newUser.job = body.job;
-          newUser.accessLevel = body.accessLevel;
-          newUser.userStatus = UserStatus.PENDING_REGISTRATION;
-          newUser.registerKey = hexToBase64Url(
-            forge.util.bytesToHex(forge.random.getBytesSync(12)),
-          );
-          await this.mailService.sendUserConfirmation(newUser);
-          return await this.userRepo.save(newUser);
-        } else {
-          throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
-        }
-      } else {
-        throw err(
-          Status.ERROR_USERNAME_ALREADY_USED,
-          'Username already in use.',
-        );
-      }
-    } else {
-      throw err(
-        Status.ERROR_INVALID_ACCESS_LEVEL,
-        'User Access Level is not Administrator.',
-      );
+  async preregister(
+    curUser: User,
+    session: Session,
+    body: PreRegisterUserDto,
+  ): Promise<string> {
+    // handling exceptions
+    if (await this.userExists(body.username)) {
+      throw err(Status.ERROR_USERNAME_ALREADY_USED, 'Username already in use.');
     }
+    if (await this.mailExists(body.email)) {
+      throw err(Status.ERROR_EMAIL_ALREADY_USED, 'Email already in use.');
+    }
+
+    // new user object creation
+    const newUser = new User();
+    newUser.username = body.username;
+    newUser.firstName = body.firstName;
+    newUser.lastName = body.lastName;
+    newUser.email = body.email;
+    newUser.group = body.group;
+    newUser.job = body.job;
+    newUser.accessLevel = body.accessLevel;
+    newUser.userStatus = UserStatus.PENDING_REGISTRATION;
+    newUser.registerKey = hexToBase64Url(
+      forge.util.bytesToHex(forge.random.getBytesSync(12)),
+    );
+
+    // database saving
+    await this.userRepo.save(newUser);
+
+    // new log entry for user creation
+    await this.logService.createUserLog(
+      ActivityType.USER_CREATION,
+      newUser,
+      curUser,
+      session,
+    );
+
+    return newUser.registerKey;
   }
 
   /**
-   * Creates a new user and returns it.
+   * Creates a new user and returns their instance public key signature.
    * Throws an exception if the email or username is already used.
    */
-  async register(body: RegisterUserDto): Promise<User> {
+  async register(body: RegisterUserDto): Promise<string> {
     const curUser = await this.userRepo.findOne({
       where: { registerKey: body.registerKey },
     });
+
     if (curUser) {
       if (curUser.userStatus === UserStatus.PENDING_REGISTRATION) {
         curUser.clientRandomValue = body.clientRandomValue;
@@ -137,7 +162,17 @@ export class UserService {
           body.encryptedRsaPrivateSharingKey;
         curUser.rsaPublicSharingKey = body.rsaPublicSharingKey;
         curUser.userStatus = UserStatus.OK;
-        return await this.userRepo.save(curUser);
+        curUser.createdAt = Date.now();
+        await this.userRepo.save(curUser);
+
+        await this.logService.createUserLog(
+          ActivityType.USER_REGISTRATION,
+          curUser,
+          curUser,
+        );
+
+        // TODO replace it with the actual signature (got from client as in whitepaper 4.1)
+        return 'instancePublicKeySignature';
       } else {
         throw err(
           Status.ERROR_INVALID_USER_STATUS,
@@ -150,10 +185,43 @@ export class UserService {
   }
 
   /**
+   * Validates a new user.
+   * Saves the user's public sharing key signature.
+   */
+  async validate(curUser: User, session: Session, body: ValidateUserDto) {
+    const user = await this.userRepo.findOne({
+      where: { username: body.username },
+    });
+
+    if (user.userStatus === UserStatus.PENDING_VALIDATION) {
+      user.publicSharingKeySignature = body.publicSharingKeySignature;
+      user.userStatus = UserStatus.OK;
+      await this.userRepo.save(user);
+
+      await this.logService.createUserLog(
+        ActivityType.USER_VALIDATION,
+        user,
+        curUser,
+        session,
+      );
+    } else {
+      throw err(
+        Status.ERROR_INVALID_USER_STATUS,
+        "User has already been validated, or hasn't been registered yet, or is suspended.",
+      );
+    }
+  }
+
+  /**
    * Updates a user account parameters specified in the request.
    * Returns the updated user.
    */
-  async update(username: string, body: UpdateUserDto): Promise<User> {
+  async update(
+    curUser: User,
+    session: Session,
+    username: string,
+    body: UpdateUserDto,
+  ): Promise<User> {
     const user = await this.findOne({ where: { username: username } });
 
     if (
@@ -169,17 +237,28 @@ export class UserService {
     user.group = body.group;
     user.job = body.job;
     user.accessLevel = body.accessLevel;
-
     await this.userRepo.save(user);
+
+    await this.logService.createUserLog(
+      ActivityType.USER_UPDATE,
+      user,
+      curUser,
+      session,
+    );
+
     return user;
   }
 
   /**
-   * Delete the target user,
+   * Deletes the target user,
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(username: string): Promise<User> {
+  async delete(
+    curUser: User,
+    session: Session,
+    username: string,
+  ): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
       relations: ['nodes'],
@@ -190,6 +269,12 @@ export class UserService {
       node.owner = null;
       await nodeRepo.save(node);
     }
+    await this.logService.createUserLog(
+      ActivityType.USER_DELETION,
+      user,
+      curUser,
+      session,
+    );
     return await this.userRepo.remove(user);
   }
 
@@ -201,11 +286,14 @@ export class UserService {
     const user = await this.userRepo.findOne({
       where: { username: username },
     });
+
     return sha256(
       addPadding(
         (user ? user.registerKey : username) +
-          INSTANCE_ID +
-          (user ? user.clientRandomValue : SERVER_RANDOM_VALUE),
+          process.env.PEC_API_INSTANCE_ID +
+          (user
+            ? user.clientRandomValue
+            : process.env.PEC_API_SERVER_RANDOM_VALUE),
         128,
       ),
     );
@@ -215,15 +303,14 @@ export class UserService {
    * Logs in an existing user.
    * Creates a new session entity with an expiration date.
    * Returns the encryption keys of the user.
-   * Throws an exception if user's credential are not valid.
+   * Throws an exception if user's credentials are not valid.
    */
   async login(body: AuthenticationDto): Promise<LoginDetails> {
     const user = await this.userRepo.findOne({ username: body.username });
+    const key = sha512(body.derivedAuthenticationKey);
 
-    if (user) {
-      const key = sha512(body.derivedAuthenticationKey);
-
-      if (key === user.hashedAuthenticationKey) {
+    if (user && key === user.hashedAuthenticationKey) {
+      if (user.userStatus === UserStatus.OK) {
         // new session
         const session = new Session();
         session.id = generateSessionIdentifier();
@@ -234,21 +321,30 @@ export class UserService {
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
         await this.sessionRepo.save(session);
-
+        await this.logService.createUserLog(
+          ActivityType.USER_LOGIN,
+          user,
+          user,
+          session,
+        );
         // returning encryption keys and connection information
         return {
-          encryptedMasterKey: user.encryptedMasterKey,
-          encryptedRsaPrivateSharingKey: user.encryptedRsaPrivateSharingKey,
-          rsaPublicSharingKey: user.rsaPublicSharingKey,
+          user: user,
           encryptedSessionIdentifier: rsaPublicEncrypt(
             user.rsaPublicSharingKey,
             session.id,
           ),
           sessionExpire: session.expire,
         };
+      } else {
+        throw err(
+          Status.ERROR_INVALID_USER_STATUS,
+          'User is pending registration or is suspended.',
+        );
       }
+    } else {
+      throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
     }
-    throw err(Status.ERROR_INVALID_CREDENTIALS, 'Invalid credentials.');
   }
 
   /**
@@ -279,5 +375,42 @@ export class UserService {
       now + parseInt(process.env.PEC_API_SESSION_MAX_IDLE_TIME) * 1000;
     await this.sessionRepo.save(session);
     return session.expire;
+  }
+
+  /**
+   * Returns all logs related to a user.
+   */
+  async findLogs(username: string): Promise<Logs> {
+    const user = await this.findOne({
+      where: { username: username },
+      relations: [
+        'subjectLogs',
+        'performerLogs',
+        'nodeOwnerLogs',
+        'nodeCurUserLogs',
+        'nodeSharedWithLogs',
+      ],
+    });
+    return {
+      subjectLogs: user.subjectLogs,
+      performerLogs: user.performerLogs,
+      nodeOwnerLogs: user.nodeOwnerLogs,
+      nodeCurUserLogs: user.nodeCurUserLogs,
+      nodeSharedWithLogs: user.nodeSharedWithLogs,
+    };
+  }
+
+  /**
+   * Returns the public sharing key and public sharing key signature of the node recipient.
+   */
+  async getSharingKeys(username: string): Promise<SharingKeys> {
+    const user = await this.findOne({
+      where: { username: username },
+    });
+
+    return {
+      publicSharingKey: user.rsaPublicSharingKey,
+      publicSharingKeySignature: user.publicSharingKeySignature,
+    };
   }
 }

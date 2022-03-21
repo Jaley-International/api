@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rename, unlinkSync } from 'fs';
 import findRemoveSync from 'find-remove';
 import { err, Status } from './communication';
-import { NodeType, Node } from '../filesystem/filesystem.entity';
+import { Node, NodeType } from '../filesystem/filesystem.entity';
 import { join } from 'path';
 
 export enum DiskFolders {
@@ -42,7 +42,7 @@ export function purgeTmpFolder() {
 }
 
 /**
- * Deletes files old enough inside the temporary folder after 30 seconds.
+ * Deletes files old enough inside the temporary folder after some time.
  */
 export function deleteTmpFile(filename: string) {
   findRemoveSync(DiskFolders.TMP, {

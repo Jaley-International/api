@@ -57,3 +57,12 @@ export async function getSessionUser(req: Request): Promise<User> {
   const session = await getValidSession(sessionId);
   return session.user;
 }
+
+/**
+ * Returns a session from the request.
+ */
+export async function getSession(req: Request): Promise<Session> {
+  const sessionId = await getHeaderSessionId(req);
+  const session = await getValidSession(sessionId);
+  return session;
+}

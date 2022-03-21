@@ -8,12 +8,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from '../user/user.module';
 import { FilesystemModule } from '../filesystem/filesystem.module';
-import { sessionValidator } from './app.middleware';
+import { privilegeValidator, sessionValidator } from './app.middleware';
 import { FilesystemController } from '../filesystem/filesystem.controller';
 import { UserController } from '../user/user.controller';
 import { LinkModule } from '../link/link.module';
 import { LinkController } from '../link/link.controller';
 import { MailModule } from '../mail/mail.module';
+import { LogModule } from '../log/log.module';
+import { ShareModule } from '../share/share.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { MailModule } from '../mail/mail.module';
     FilesystemModule,
     LinkModule,
     MailModule,
+    LogModule,
+    ShareModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -39,7 +43,35 @@ export class AppModule implements NestModule {
         { path: 'api/users/register', method: RequestMethod.POST },
         { path: 'api/users/login', method: RequestMethod.POST },
         { path: 'api/users/(.*)/salt', method: RequestMethod.GET },
+        { path: 'api/links/(.*)/node', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
+
+    consumer.apply(privilegeValidator).forRoutes(
+      {
+        path: 'users',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'users',
+        method: RequestMethod.POST,
+      },
+      {
+        path: 'users/:username',
+        method: RequestMethod.DELETE,
+      },
+      {
+        path: 'users/:username',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'users/:username',
+        method: RequestMethod.PATCH,
+      },
+      {
+        path: 'users/validate',
+        method: RequestMethod.POST,
+      },
+    );
   }
 }

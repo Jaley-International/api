@@ -7,6 +7,9 @@ import { FilesystemService } from '../filesystem/filesystem.service';
 import { CreateLinkDto } from './link.dto';
 import { Node, NodeType } from '../filesystem/filesystem.entity';
 import { err, Status } from '../utils/communication';
+import { ActivityType } from '../log/log.entity';
+import { LogService } from '../log/log.service';
+import { Session, User } from '../user/user.entity';
 
 @Injectable()
 export class LinkService {
@@ -14,6 +17,7 @@ export class LinkService {
     @InjectRepository(Link)
     private linkRepo: Repository<Link>,
     private fileService: FilesystemService,
+    private logService: LogService,
   ) {}
 
   /**
@@ -39,7 +43,11 @@ export class LinkService {
    * Creates a new link in relation with an existing node;
    * Returns the created link's id (shareId).
    */
-  async createLink(body: CreateLinkDto): Promise<string> {
+  async createLink(
+    curUser: User,
+    session: Session,
+    body: CreateLinkDto,
+  ): Promise<string> {
     const link = new Link();
     link.shareId = forge.util.bytesToHex(forge.random.getBytesSync(8));
     link.encryptedNodeKey = body.encryptedNodeKey;
@@ -47,8 +55,20 @@ export class LinkService {
     link.iv = body.iv;
     link.node = await this.fileService.findOne({
       where: { id: body.nodeId, type: NodeType.FILE },
+      relations: ['parent', 'owner'],
     });
     await this.linkRepo.save(link);
+    await this.logService.createNodeLog(
+      ActivityType.FILE_SHARING,
+      link.node,
+      link.node.parent,
+      null,
+      curUser,
+      session,
+      link.node.owner,
+      null,
+      link,
+    );
     return link.shareId;
   }
 
