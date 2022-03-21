@@ -26,7 +26,7 @@ import {
 import { diskStorage } from 'multer';
 import { DiskFolders } from '../utils/uploadsManager';
 import { res, ResBody } from '../utils/communication';
-import { getSessionUser } from '../utils/session';
+import { getSession, getSessionUser } from '../utils/session';
 
 @Controller('file-system')
 export class FilesystemController {
@@ -52,7 +52,10 @@ export class FilesystemController {
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const filesystem = await this.fileService.getFileSystem(curUser, nodeId);
-    return res("Successfully got node's tree", { filesystem: filesystem });
+    return res("Successfully got node's tree", {
+      filesystem: filesystem.node,
+      authorizedUsers: filesystem.authorizedUsers,
+    });
   }
 
   /**
@@ -95,7 +98,8 @@ export class FilesystemController {
     @Body() body: CreateFileDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    await this.fileService.createFile(curUser, body);
+    const session = await getSession(req);
+    await this.fileService.createFile(curUser, session, body);
     return res('Successfully created new file.', {});
   }
 
@@ -108,7 +112,8 @@ export class FilesystemController {
     @Body() body: CreateFolderDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
-    await this.fileService.createFolder(curUser, body);
+    const session = await getSession(req);
+    await this.fileService.createFolder(curUser, session, body);
     return res('Successfully created new folder.', {});
   }
 
@@ -119,10 +124,13 @@ export class FilesystemController {
    */
   @Patch(':nodeId/ref')
   async updateRef(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateRefDto,
   ): Promise<ResBody> {
-    await this.fileService.updateRef(nodeId, body);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.updateRef(curUser, session, nodeId, body);
     return res('Successfully overwritten file.', {});
   }
 
@@ -143,11 +151,14 @@ export class FilesystemController {
    */
   @Patch(':nodeId/parent')
   async updateParent(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateParentDto,
   ): Promise<ResBody> {
-    await this.fileService.updateParent(nodeId, body);
-    return res('Successfully moved file to another parent.', {});
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.updateParent(curUser, session, nodeId, body);
+    return res('Successfully moved node to another parent.', {});
   }
 
   /**
@@ -155,9 +166,12 @@ export class FilesystemController {
    */
   @Delete(':nodeId')
   async delete(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ResBody> {
-    await this.fileService.delete(nodeId);
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.delete(curUser, session, nodeId);
     return res('Successfully deleted node.', {});
   }
 
@@ -181,15 +195,33 @@ export class FilesystemController {
    */
   @Get(':nodeId/content')
   async downloadFile(
+    @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
     // setting encoding method to ensure loyal data retransmission
     res.set({
       'Content-Encoding': 'identity',
     });
     // returns directly the encrypted file,
     // not encapsulated in a response body like the other routes
-    return await this.fileService.getFile(nodeId);
+    return await this.fileService.getFile(curUser, session, nodeId);
+  }
+
+  /**
+   * Gets all logs related to a node.
+   */
+  @Get(':nodeId/logs')
+  async getLogsByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
+    const logs = await this.fileService.findLogs(nodeId);
+    return res('Successfully got node logs.', { logs: logs });
+  }
+
+  @Get(':nodeId/shares')
+  async getSharesByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
+    const shares = await this.fileService.findShares(nodeId);
+    return res('Successfully got shared users.', { shares: shares });
   }
 }

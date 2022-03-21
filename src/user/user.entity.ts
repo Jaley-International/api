@@ -7,6 +7,8 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
+import { NodeLog, UserLog } from '../log/log.entity';
+import { Share } from '../share/share.entity';
 
 export enum AccessLevel {
   ADMINISTRATOR = 'ADMINISTRATOR',
@@ -17,6 +19,7 @@ export enum AccessLevel {
 export enum UserStatus {
   OK = 'OK',
   PENDING_REGISTRATION = 'PENDING_REGISTRATION',
+  PENDING_VALIDATION = 'PENDING_VALIDATION',
   SUSPENDED = 'SUSPENDED',
 }
 
@@ -72,11 +75,45 @@ export class User {
   @Column({ nullable: true, length: 1000 })
   rsaPublicSharingKey: string;
 
+  @Column({ nullable: true })
+  encryptedInstancePublicKey: string;
+
+  @Column({ nullable: true })
+  encryptedInstancePrivateKey: string;
+
+  @Column({ nullable: true })
+  publicSharingKeySignature: string;
+
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];
 
   @OneToMany(() => Node, (node) => node.owner)
   nodes: Node[];
+
+  // logs
+
+  @OneToMany(() => UserLog, (userLog) => userLog.subject)
+  subjectLogs: UserLog[];
+
+  @OneToMany(() => UserLog, (userLog) => userLog.performer)
+  performerLogs: UserLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.owner)
+  nodeOwnerLogs: NodeLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.curUser)
+  nodeCurUserLogs: NodeLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.sharedWith)
+  nodeSharedWithLogs: NodeLog[];
+
+  // shares
+
+  @OneToMany(() => Share, (share) => share.sender)
+  senderShares: Share[];
+
+  @OneToMany(() => Share, (share) => share.recipient)
+  recipientShares: Share[];
 }
 
 @Entity()
@@ -95,4 +132,12 @@ export class Session {
 
   @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
   user: User;
+
+  // logs
+
+  @OneToMany(() => UserLog, (userLog) => userLog.session)
+  userLogs: UserLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.session)
+  nodeLogs: NodeLog[];
 }

@@ -19,14 +19,32 @@ import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { User } from '../user/user.entity';
+import { AccessLevel, Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
+import { ActivityType, NodeLog } from '../log/log.entity';
+import { LogService } from '../log/log.service';
+import { Share } from '../share/share.entity';
+import { UserService } from '../user/user.service';
+import { FindTreeOptions } from 'typeorm/find-options/FindTreeOptions';
+
+export interface Logs {
+  logs: NodeLog[];
+  oldParentLogs: NodeLog[];
+  newParentLogs: NodeLog[];
+}
+
+interface FileSystemResponse {
+  authorizedUsers: User[];
+  node: Node;
+}
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
   constructor(
     @InjectRepository(Node)
     private nodeRepo: TreeRepository<Node>,
+    private logService: LogService,
+    private userService: UserService,
   ) {}
 
   /**
@@ -57,8 +75,8 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Returns all the file system tree.
    */
-  private async findAll(): Promise<Node> {
-    const data = await this.nodeRepo.findTrees();
+  private async findAll(options?: FindTreeOptions): Promise<Node> {
+    const data = await this.nodeRepo.findTrees(options);
     if (!data) {
       throw err(Status.ERROR_NODE_NOT_FOUND, 'Empty file system.');
     }
@@ -81,20 +99,70 @@ export class FilesystemService implements OnModuleInit {
    * Returns the descendant tree of the targeted node by id.
    * If no node id is passed in argument, returns the whole filesystem.
    */
-  async getFileSystem(curUser: User, nodeId?: number): Promise<Node> {
+  async getFileSystem(
+    curUser: User,
+    nodeId?: number,
+  ): Promise<FileSystemResponse> {
     let node: Node;
+
     if (nodeId) {
-      node = await this.findOne({ where: { id: nodeId } });
+      node = await this.findOne({
+        where: { id: nodeId },
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      });
     } else {
-      node = await this.findAll();
+      node = await this.findAll({
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      });
     }
-    if (node.parent && node.owner !== curUser) {
+
+    // checking if user is in the share list of the node
+    let shared = false;
+    for (const share of node.shares)
+      if (share.recipient.username === curUser.username) shared = true;
+
+    if (
+      node.parent &&
+      !shared &&
+      node.owner.username !== curUser.username &&
+      curUser.accessLevel !== AccessLevel.ADMINISTRATOR
+    ) {
       throw err(
         Status.ERROR_INVALID_NODE_OWNER,
         'Current user is not the owner of the node.',
       );
     }
-    return await this.nodeRepo.findDescendantsTree(node);
+
+    const adminUsers = await this.userService.findAll({
+      where: { accessLevel: AccessLevel.ADMINISTRATOR },
+    });
+    // add from admin list the users contained in the node
+    const AuthorizedUsers = getAuthorizedUsers(node, adminUsers);
+
+    return {
+      authorizedUsers: AuthorizedUsers,
+      node: await this.nodeRepo.findDescendantsTree(node, {
+        relations: [
+          'owner',
+          'parent',
+          'parent.owner',
+          'shares',
+          'shares.recipient',
+        ],
+      }),
+    };
   }
 
   /**
@@ -104,19 +172,25 @@ export class FilesystemService implements OnModuleInit {
   async getNodeParentList(curUser: User, nodeId: number) {
     const node = await this.findOne({ where: { id: nodeId } });
     const path = await this.nodeRepo.findAncestors(node, {
-      relations: ['owner'],
+      relations: [
+        'owner',
+        'parent',
+        'parent.owner',
+        'shares',
+        'shares.recipient',
+      ],
     });
+
     return path
       .filter((n) => !n.owner || n.owner.username === curUser.username)
       .map((n) => {
-        delete n.owner;
         return n;
       });
   }
 
   /**
    * Throws an error if the file object in argument is invalid (undefined, empty, not uploaded...).
-   * This file will be deleted if he's still in the temporary folder after 30 seconds.
+   * This file will be deleted if he's still in the temporary folder after some time.
    * Returns the name of the file.
    */
   uploadFile(file: Express.Multer.File): string {
@@ -140,7 +214,7 @@ export class FilesystemService implements OnModuleInit {
    * Uploads a file object into the database architectures.
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async createFile(curUser: User, body: CreateFileDto) {
+  async createFile(curUser: User, session: Session, body: CreateFileDto) {
     const newFile = new Node();
     newFile.iv = body.iv;
     newFile.tag = body.tag;
@@ -158,12 +232,21 @@ export class FilesystemService implements OnModuleInit {
     });
     moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
+    await this.logService.createNodeLog(
+      ActivityType.FILE_UPLOAD,
+      newFile,
+      newFile.parent,
+      null,
+      curUser,
+      session,
+      curUser,
+    );
   }
 
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(curUser: User, body: CreateFolderDto) {
+  async createFolder(curUser: User, session: Session, body: CreateFolderDto) {
     const newFolder = new Node();
     newFolder.iv = body.iv;
     newFolder.tag = body.tag;
@@ -180,18 +263,33 @@ export class FilesystemService implements OnModuleInit {
       },
     });
     await this.nodeRepo.save(newFolder);
+    await this.logService.createNodeLog(
+      ActivityType.FOLDER_CREATION,
+      newFolder,
+      newFolder.parent,
+      null,
+      curUser,
+      session,
+      curUser,
+    );
   }
 
   /**
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(nodeId: number, body: UpdateRefDto) {
+  async updateRef(
+    curUser: User,
+    session: Session,
+    nodeId: number,
+    body: UpdateRefDto,
+  ) {
     const node = await this.findOne({
       where: {
         id: nodeId,
         type: NodeType.FILE,
       },
+      relations: ['parent', 'owner'],
     });
 
     moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
@@ -199,8 +297,17 @@ export class FilesystemService implements OnModuleInit {
     node.ref = body.newRef; // updating file reference (just like overwrite)
     node.encryptedMetadata = body.newEncryptedMetadata;
     node.tag = body.newTag;
-
     await this.nodeRepo.save(node);
+
+    await this.logService.createNodeLog(
+      ActivityType.FILE_OVERWRITE,
+      node,
+      node.parent,
+      null,
+      curUser,
+      session,
+      node.owner,
+    );
   }
 
   /**
@@ -219,13 +326,19 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(nodeId: number, body: UpdateParentDto) {
+  async updateParent(
+    curUser: User,
+    session: Session,
+    nodeId: number,
+    body: UpdateParentDto,
+  ) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
+      relations: ['parent', 'owner'],
     });
-
+    const oldParent = node.parent;
     // updating parent
     node.parent = await this.findOne({
       where: {
@@ -233,18 +346,29 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
-
     await this.nodeRepo.save(node);
+    await this.logService.createNodeLog(
+      node.type === NodeType.FILE
+        ? ActivityType.FILE_MOVING
+        : ActivityType.FOLDER_MOVING,
+      node,
+      oldParent,
+      node.parent,
+      curUser,
+      session,
+      node.owner,
+    );
   }
 
   /**
    * Deletes a node by id and all of its descendant.
    */
-  async delete(nodeId: number) {
+  async delete(curUser: User, session: Session, nodeId: number) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
+      relations: ['parent', 'owner'],
     });
     const descendants = await this.nodeRepo.findDescendants(node);
 
@@ -254,7 +378,19 @@ export class FilesystemService implements OnModuleInit {
       deletePermanentFile(descendant);
     }
 
-    // removes the target node form database with all its descendants
+    await this.logService.createNodeLog(
+      node.type === NodeType.FILE
+        ? ActivityType.FILE_DELETION
+        : ActivityType.FOLDER_DELETION,
+      node,
+      node.parent,
+      null,
+      curUser,
+      session,
+      node.owner,
+    );
+
+    // removes the target node from database with all its descendants
     // because their onDelete option should be set to CASCADE
     await this.nodeRepo.remove(node);
   }
@@ -274,15 +410,73 @@ export class FilesystemService implements OnModuleInit {
    * Find the Node entity of the file in the database
    * Return the file content of the file.
    */
-  async getFile(nodeId: number): Promise<StreamableFile> {
+  async getFile(
+    curUser: User,
+    session: Session,
+    nodeId: number,
+  ): Promise<StreamableFile> {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
+      relations: ['parent', 'owner'],
     });
+
     const path = join(process.cwd(), DiskFolders.PERM, node.ref);
+
     if (existsSync(path)) {
       const file = createReadStream(path);
+      await this.logService.createNodeLog(
+        ActivityType.FILE_DOWNLOAD,
+        node,
+        node.parent,
+        null,
+        curUser,
+        session,
+        node.owner,
+      );
       return new StreamableFile(file);
     }
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
   }
+
+  /**
+   * Returns all logs related to a node.
+   */
+  async findLogs(nodeId: number): Promise<Logs> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['logs', 'oldParentLogs', 'newParentLogs'],
+    });
+    return {
+      logs: node.logs,
+      oldParentLogs: node.oldParentLogs,
+      newParentLogs: node.newParentLogs,
+    };
+  }
+
+  /**
+   * Returns all shares of the target node.
+   */
+  async findShares(nodeId: number): Promise<Share[]> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['shares', 'shares.recipient'],
+    });
+    return node.shares;
+  }
+}
+
+function getAuthorizedUsers(node: Node, users: User[]): User[] {
+  // Return distinct list of users if root folder is reached
+  if (node.parent === null)
+    return users.filter((user, index, self) => self.indexOf(user) === index);
+
+  // Add node owner
+  users.push(node.owner);
+
+  // Add authorised users
+  node.shares.forEach((share) => {
+    users.push(share.recipient);
+  });
+
+  return getAuthorizedUsers(node.parent, users);
 }

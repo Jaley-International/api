@@ -14,6 +14,8 @@ import { UserController } from '../user/user.controller';
 import { LinkModule } from '../link/link.module';
 import { LinkController } from '../link/link.controller';
 import { MailModule } from '../mail/mail.module';
+import { LogModule } from '../log/log.module';
+import { ShareModule } from '../share/share.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { MailModule } from '../mail/mail.module';
     FilesystemModule,
     LinkModule,
     MailModule,
+    LogModule,
+    ShareModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -42,6 +46,7 @@ export class AppModule implements NestModule {
         { path: 'api/links/(.*)/node', method: RequestMethod.GET },
       )
       .forRoutes(UserController, FilesystemController, LinkController);
+
     consumer.apply(privilegeValidator).forRoutes(
       {
         path: 'users',
@@ -62,6 +67,10 @@ export class AppModule implements NestModule {
       {
         path: 'users/:username',
         method: RequestMethod.PATCH,
+      },
+      {
+        path: 'users/validate',
+        method: RequestMethod.POST,
       },
     );
   }
