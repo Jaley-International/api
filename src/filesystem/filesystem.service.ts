@@ -339,6 +339,7 @@ export class FilesystemService implements OnModuleInit {
       relations: ['parent', 'owner'],
     });
     const oldParent = node.parent;
+
     // updating parent
     node.parent = await this.findOne({
       where: {
@@ -346,7 +347,9 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
+
     await this.nodeRepo.save(node);
+
     await this.logService.createNodeLog(
       node.type === NodeType.FILE
         ? ActivityType.FILE_MOVING
