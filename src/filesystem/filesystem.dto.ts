@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateFolderDto {
+export class CreateNodeDto {
   @ApiProperty()
   @IsDefined()
   @IsString()
@@ -38,16 +38,8 @@ export class CreateFolderDto {
 
   @ApiProperty()
   @IsDefined()
-  @IsInt()
-  parentId: number;
-}
-
-export class CreateFileDto extends CreateFolderDto {
-  @ApiProperty()
-  @IsDefined()
   @IsString()
-  @IsNotEmpty()
-  ref: string;
+  parentId: number;
 }
 
 export class UpdateMetadataDto {
@@ -71,12 +63,6 @@ export class UpdateParentDto {
 }
 
 export class UpdateRefDto {
-  @ApiProperty()
-  @IsDefined()
-  @IsString()
-  @IsNotEmpty()
-  newRef: string;
-
   @ApiProperty()
   @IsDefined()
   @IsString()

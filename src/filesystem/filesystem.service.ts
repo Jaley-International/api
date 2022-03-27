@@ -2,19 +2,13 @@ import { Injectable, OnModuleInit, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
-  CreateFileDto,
-  CreateFolderDto,
+  CreateNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
-import {
-  deletePermanentFile,
-  deleteTmpFile,
-  DiskFolders,
-  moveFileFromTmpToPermanent,
-} from '../utils/uploadsManager';
+import { deletePermanentFile, DiskFolders } from '../utils/uploadsManager';
 import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
@@ -193,7 +187,12 @@ export class FilesystemService implements OnModuleInit {
    * This file will be deleted if he's still in the temporary folder after some time.
    * Returns the name of the file.
    */
-  uploadFile(file: Express.Multer.File): string {
+  async uploadFile(
+    curUser: User,
+    session: Session,
+    body: CreateNodeDto,
+    file: Express.Multer.File,
+  ) {
     // error on invalid file
     if (!file) {
       throw err(
@@ -202,26 +201,13 @@ export class FilesystemService implements OnModuleInit {
       );
     }
 
-    // file will be deleted after some time
-    setTimeout(() => {
-      deleteTmpFile(file.filename);
-    }, parseInt(process.env.PEC_API_TMP_FILE_EXP) * 1000);
-
-    return file.filename;
-  }
-
-  /**
-   * Uploads a file object into the database architectures.
-   * Moves an uploaded file from temporary folder to permanent folder.
-   */
-  async createFile(curUser: User, session: Session, body: CreateFileDto) {
     const newFile = new Node();
     newFile.iv = body.iv;
     newFile.tag = body.tag;
     newFile.encryptedNodeKey = body.encryptedNodeKey;
     newFile.encryptedMetadata = body.encryptedMetadata;
     newFile.type = NodeType.FILE;
-    newFile.ref = body.ref;
+    newFile.ref = file.filename;
     newFile.parentEncryptedKey = body.parentEncryptedKey;
     newFile.owner = curUser;
     newFile.parent = await this.findOne({
@@ -230,8 +216,10 @@ export class FilesystemService implements OnModuleInit {
         type: NodeType.FOLDER,
       },
     });
-    moveFileFromTmpToPermanent(body.ref);
+
     await this.nodeRepo.save(newFile);
+
+    // create node log into database that a new file successfully being uploaded
     await this.logService.createNodeLog(
       ActivityType.FILE_UPLOAD,
       newFile,
@@ -246,7 +234,7 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Inserts a new folder in a user workspace file system.
    */
-  async createFolder(curUser: User, session: Session, body: CreateFolderDto) {
+  async createFolder(curUser: User, session: Session, body: CreateNodeDto) {
     const newFolder = new Node();
     newFolder.iv = body.iv;
     newFolder.tag = body.tag;
@@ -283,6 +271,7 @@ export class FilesystemService implements OnModuleInit {
     session: Session,
     nodeId: number,
     body: UpdateRefDto,
+    file: Express.Multer.File,
   ) {
     const node = await this.findOne({
       where: {
@@ -292,12 +281,12 @@ export class FilesystemService implements OnModuleInit {
       relations: ['parent', 'owner'],
     });
 
-    moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
-    deletePermanentFile(node); // deleting old file
-    node.ref = body.newRef; // updating file reference (just like overwrite)
+    node.ref = file.filename; // updating file reference (just like overwrite)
     node.encryptedMetadata = body.newEncryptedMetadata;
     node.tag = body.newTag;
     await this.nodeRepo.save(node);
+
+    deletePermanentFile(node); // deleting old file
 
     await this.logService.createNodeLog(
       ActivityType.FILE_OVERWRITE,

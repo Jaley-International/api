@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { purgeTmpFolder } from './utils/uploadsManager';
 import { writeFileSync } from 'fs';
 
 async function bootstrap() {
@@ -22,4 +21,3 @@ async function bootstrap() {
   await app.listen(process.env.PEC_API_PORT);
 }
 bootstrap();
-purgeTmpFolder();

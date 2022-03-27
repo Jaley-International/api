@@ -17,8 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesystemService } from './filesystem.service';
 import { Express, Request, Response } from 'express';
 import {
-  CreateFileDto,
-  CreateFolderDto,
+  CreateNodeDto,
   UpdateMetadataDto,
   UpdateParentDto,
   UpdateRefDto,
@@ -88,28 +87,12 @@ export class FilesystemController {
   }
 
   /**
-   * Uploads a file object into the database architectures.
-   * This requires to have previously uploaded a file
-   * in order to move it from temporary folder to permanent folder.
-   */
-  @Post('file')
-  async createFile(
-    @Req() req: Request,
-    @Body() body: CreateFileDto,
-  ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const session = await getSession(req);
-    await this.fileService.createFile(curUser, session, body);
-    return res('Successfully created new file.', {});
-  }
-
-  /**
    * Inserts a new folder in the file system.
    */
   @Post('folder')
   async createFolder(
     @Req() req: Request,
-    @Body() body: CreateFolderDto,
+    @Body() body: CreateNodeDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const session = await getSession(req);
@@ -123,15 +106,42 @@ export class FilesystemController {
    * in order to move it from temporary folder to permanent folder.
    */
   @Patch(':nodeId/ref')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({ destination: DiskFolders.PERM }),
+    }),
+  )
   async updateRef(
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateRefDto,
   ): Promise<ResBody> {
     const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.fileService.updateRef(curUser, session, nodeId, body);
+    await this.fileService.updateRef(curUser, session, nodeId, body, file);
     return res('Successfully overwritten file.', {});
+  }
+
+  /**
+   * Uploads the posted file in server disk storage into the temporary folder.
+   * Returns to client the random generated file name.
+   */
+  @Post('file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({ destination: DiskFolders.PERM }),
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+    @Body() body: CreateNodeDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    const ref = this.fileService.uploadFile(curUser, session, body, file);
+    return res('Successfully uploaded file.', {});
   }
 
   /**
@@ -176,24 +186,9 @@ export class FilesystemController {
   }
 
   /**
-   * Uploads the posted file in server disk storage into the temporary folder.
-   * Returns to client the random generated file name.
-   */
-  @Post('content')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({ destination: DiskFolders.TMP }),
-    }),
-  )
-  uploadFile(@UploadedFile() file: Express.Multer.File): ResBody {
-    const ref = this.fileService.uploadFile(file);
-    return res('Successfully uploaded file.', { ref: ref });
-  }
-
-  /**
    * Gets the corresponding file content of a node found by id.
    */
-  @Get(':nodeId/content')
+  @Get(':nodeId/file')
   async downloadFile(
     @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
