@@ -23,7 +23,7 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { diskStorage } from 'multer';
-import { DiskFolders } from '../utils/uploadsManager';
+import { DiskFolders } from '../utils/uploads';
 import { res, ResBody } from '../utils/communication';
 import { getSession, getSessionUser } from '../utils/session';
 
@@ -77,10 +77,10 @@ export class FilesystemController {
    * Returns to client all the links referencing the target node.
    */
   @Get(':nodeId/links')
-  async getLinksByNode(
+  async getNodeLinks(
     @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ResBody> {
-    const links = await this.fileService.getLinks(nodeId);
+    const links = await this.fileService.findLinks(nodeId);
     return res('Successfully got all node links.', {
       links: links,
     });
@@ -101,11 +101,29 @@ export class FilesystemController {
   }
 
   /**
-   * Updates a node's reference.
-   * This requires to have previously uploaded a file
-   * in order to move it from temporary folder to permanent folder.
+   * Uploads the posted file in server disk storage into the permanent folder.
    */
-  @Patch(':nodeId/ref')
+  @Post('file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({ destination: DiskFolders.PERM }),
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+    @Body() body: CreateNodeDto,
+  ): Promise<ResBody> {
+    const curUser = await getSessionUser(req);
+    const session = await getSession(req);
+    await this.fileService.uploadFile(curUser, session, body, file);
+    return res('Successfully uploaded file.', {});
+  }
+
+  /**
+   * Uploads a file and updated the targeted node corresponding file to this one.
+   */
+  @Patch(':nodeId')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({ destination: DiskFolders.PERM }),
@@ -121,27 +139,6 @@ export class FilesystemController {
     const session = await getSession(req);
     await this.fileService.updateRef(curUser, session, nodeId, body, file);
     return res('Successfully overwritten file.', {});
-  }
-
-  /**
-   * Uploads the posted file in server disk storage into the temporary folder.
-   * Returns to client the random generated file name.
-   */
-  @Post('file')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({ destination: DiskFolders.PERM }),
-    }),
-  )
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
-    @Body() body: CreateNodeDto,
-  ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
-    const session = await getSession(req);
-    const ref = this.fileService.uploadFile(curUser, session, body, file);
-    return res('Successfully uploaded file.', {});
   }
 
   /**
@@ -209,13 +206,13 @@ export class FilesystemController {
    * Gets all logs related to a node.
    */
   @Get(':nodeId/logs')
-  async getLogsByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
+  async getNodeLogs(@Param('nodeId') nodeId: number): Promise<ResBody> {
     const logs = await this.fileService.findLogs(nodeId);
     return res('Successfully got node logs.', { logs: logs });
   }
 
   @Get(':nodeId/shares')
-  async getSharesByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
+  async getNodeShares(@Param('nodeId') nodeId: number): Promise<ResBody> {
     const shares = await this.fileService.findShares(nodeId);
     return res('Successfully got shared users.', { shares: shares });
   }

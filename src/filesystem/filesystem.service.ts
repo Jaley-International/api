@@ -8,7 +8,7 @@ import {
   UpdateRefDto,
 } from './filesystem.dto';
 import { Node, NodeType } from './filesystem.entity';
-import { deletePermanentFile, DiskFolders } from '../utils/uploadsManager';
+import { deletePermanentFile, DiskFolders } from '../utils/uploads';
 import { err, Status } from '../utils/communication';
 import { createReadStream } from 'graceful-fs';
 import { join } from 'path';
@@ -219,7 +219,6 @@ export class FilesystemService implements OnModuleInit {
 
     await this.nodeRepo.save(newFile);
 
-    // create node log into database that a new file successfully being uploaded
     await this.logService.createNodeLog(
       ActivityType.FILE_UPLOAD,
       newFile,
@@ -388,17 +387,6 @@ export class FilesystemService implements OnModuleInit {
   }
 
   /**
-   * Returns all the links in relation with a targeted node.
-   */
-  async getLinks(nodeId: number): Promise<Link[]> {
-    const node = await this.findOne({
-      where: { id: nodeId },
-      relations: ['links'],
-    });
-    return node.links;
-  }
-
-  /**
    * Find the Node entity of the file in the database
    * Return the file content of the file.
    */
@@ -428,6 +416,17 @@ export class FilesystemService implements OnModuleInit {
       return new StreamableFile(file);
     }
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
+  }
+
+  /**
+   * Returns all the links in relation with a targeted node.
+   */
+  async findLinks(nodeId: number): Promise<Link[]> {
+    const node = await this.findOne({
+      where: { id: nodeId },
+      relations: ['links'],
+    });
+    return node.links;
   }
 
   /**
