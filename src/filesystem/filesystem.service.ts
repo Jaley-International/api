@@ -280,12 +280,12 @@ export class FilesystemService implements OnModuleInit {
       relations: ['parent', 'owner'],
     });
 
+    deletePermanentFile(node); // deleting old file
+
     node.ref = file.filename; // updating file reference (just like overwrite)
     node.encryptedMetadata = body.newEncryptedMetadata;
     node.tag = body.newTag;
     await this.nodeRepo.save(node);
-
-    deletePermanentFile(node); // deleting old file
 
     await this.logService.createNodeLog(
       ActivityType.FILE_OVERWRITE,

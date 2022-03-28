@@ -1,10 +1,4 @@
-import {
-  IsDefined,
-  IsInt,
-  IsNotEmpty,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { IsDefined, IsInt, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateNodeDto {
