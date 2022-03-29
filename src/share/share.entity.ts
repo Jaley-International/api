@@ -1,6 +1,13 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from '../user/user.entity';
 import { Node } from '../filesystem/filesystem.entity';
+import { ShareLog } from '../log/log.entity';
 
 @Entity()
 export class Share {
@@ -23,4 +30,9 @@ export class Share {
 
   @ManyToOne(() => Node, (node) => node.shares, { onDelete: 'CASCADE' })
   node: Node;
+
+  // logs
+
+  @OneToMany(() => ShareLog, (shareLog) => shareLog.share)
+  logs: ShareLog[];
 }

@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
-import { NodeLog } from '../log/log.entity';
+import { NodeLog, NodeMovingLog } from '../log/log.entity';
 import { Share } from '../share/share.entity';
 
 export enum NodeType {
@@ -56,10 +56,13 @@ export class Node {
   @OneToMany(() => NodeLog, (nodeLog) => nodeLog.node)
   logs: NodeLog[];
 
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.oldParent)
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.parent)
+  parentLogs: NodeLog[];
+
+  @OneToMany(() => NodeMovingLog, (nodeMovingLog) => nodeMovingLog.oldParent)
   oldParentLogs: NodeLog[];
 
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.newParent)
+  @OneToMany(() => NodeMovingLog, (nodeMovingLog) => nodeMovingLog.newParent)
   newParentLogs: NodeLog[];
 
   // shares

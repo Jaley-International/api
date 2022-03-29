@@ -1,6 +1,6 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
-import { NodeLog } from '../log/log.entity';
+import { LinkLog } from '../log/log.entity';
 
 @Entity()
 export class Link {
@@ -19,6 +19,8 @@ export class Link {
   @ManyToOne(() => Node, (node) => node.links, { onDelete: 'CASCADE' })
   node: Node;
 
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.link)
-  logs: NodeLog[];
+  // logs
+
+  @OneToMany(() => LinkLog, (linkLog) => linkLog.link)
+  logs: LinkLog[];
 }

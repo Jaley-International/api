@@ -7,7 +7,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
-import { NodeLog, UserLog } from '../log/log.entity';
+import { Log, UserLog } from '../log/log.entity';
 import { Share } from '../share/share.entity';
 
 export enum AccessLevel {
@@ -93,19 +93,7 @@ export class User {
   // logs
 
   @OneToMany(() => UserLog, (userLog) => userLog.subject)
-  subjectLogs: UserLog[];
-
-  @OneToMany(() => UserLog, (userLog) => userLog.performer)
-  performerLogs: UserLog[];
-
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.owner)
-  nodeOwnerLogs: NodeLog[];
-
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.curUser)
-  nodeCurUserLogs: NodeLog[];
-
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.sharedWith)
-  nodeSharedWithLogs: NodeLog[];
+  logs: UserLog[];
 
   // shares
 
@@ -135,9 +123,6 @@ export class Session {
 
   // logs
 
-  @OneToMany(() => UserLog, (userLog) => userLog.session)
-  userLogs: UserLog[];
-
-  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.session)
-  nodeLogs: NodeLog[];
+  @OneToMany(() => Log, (log) => log.session)
+  logs: Log[];
 }
