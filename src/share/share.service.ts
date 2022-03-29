@@ -7,8 +7,6 @@ import { ShareNodeDto } from './share.dto';
 import { LogService } from '../log/log.service';
 import { UserService } from '../user/user.service';
 import { FilesystemService } from '../filesystem/filesystem.service';
-import { ActivityType } from '../log/log.entity';
-import { NodeType } from '../filesystem/filesystem.entity';
 
 @Injectable()
 export class ShareService {
@@ -32,7 +30,6 @@ export class ShareService {
 
     const node = await this.fileService.findOne({
       where: { id: body.nodeId },
-      relations: ['parent', 'owner'],
     });
 
     const share = new Share();
@@ -43,17 +40,6 @@ export class ShareService {
     share.node = node;
     await this.shareRepo.save(share);
 
-    await this.logService.createNodeLog(
-      node.type === NodeType.FILE
-        ? ActivityType.FILE_SHARING
-        : ActivityType.FOLDER_SHARING,
-      node,
-      node.parent,
-      null,
-      curUser,
-      session,
-      node.owner,
-      recipient,
-    );
+    await this.logService.createShareLog(share, session);
   }
 }

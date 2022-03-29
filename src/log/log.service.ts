@@ -31,20 +31,20 @@ export class LogService {
   ) {}
 
   /**
-   * Returns all existing node logs.
-   */
-  async findAllNodeLogs(): Promise<NodeLog[]> {
-    return await this.nodeLogRepo.find({
-      relations: ['node', 'Parent'],
-    });
-  }
-
-  /**
    * Returns all existing user logs.
    */
   async findAllUserLogs(): Promise<UserLog[]> {
     return await this.userLogRepo.find({
-      relations: ['subject,session'],
+      relations: ['session', 'subject'],
+    });
+  }
+
+  /**
+   * Returns all existing node logs.
+   */
+  async findAllNodeLogs(): Promise<NodeLog[]> {
+    return await this.nodeLogRepo.find({
+      relations: ['session', 'node', 'parent'],
     });
   }
 
@@ -53,7 +53,7 @@ export class LogService {
    */
   async findAllNodeMovingLogs(): Promise<NodeMovingLog[]> {
     return await this.nodeMovingLogRepo.find({
-      relations: ['session', 'oldParent', 'newParent'],
+      relations: ['session', 'node', 'oldParent', 'newParent'],
     });
   }
 
@@ -67,7 +67,7 @@ export class LogService {
   }
 
   /**
-   * Returns all existing link logs.
+   * Returns all existing share logs.
    */
   async findAllShareLogs(): Promise<ShareLog[]> {
     return await this.shareLogRepo.find({
@@ -79,8 +79,8 @@ export class LogService {
    * Creates a new user log entry.
    */
   async createUserLog(
-    activityType: UserActivityType,
     subject: User,
+    type: UserActivityType,
     session?: Session,
   ): Promise<void> {
     const newLog = new UserLog();
@@ -88,7 +88,7 @@ export class LogService {
     newLog.timestamp = Date.now();
     newLog.session = session;
     newLog.subject = subject;
-    newLog.type = activityType;
+    newLog.type = type;
 
     await this.userLogRepo.save(newLog);
   }
@@ -97,62 +97,65 @@ export class LogService {
    * Creates a new node log entry.
    */
   async createNodeLog(
-    activityType: NodeActivityType,
     node: Node,
     parent: Node,
-    session?: Session,
+    type: NodeActivityType,
+    session: Session,
   ): Promise<void> {
     const newLog = new NodeLog();
 
     newLog.timestamp = Date.now();
+    newLog.session = session;
     newLog.node = node;
     newLog.parent = parent;
-    newLog.session = session;
+    newLog.type = type;
 
     await this.nodeLogRepo.save(newLog);
   }
 
   /**
-   * Creates a new node Moving log entry.
+   * Creates a new node moving log entry.
    */
   async createNodeMovingLog(
     node: Node,
     oldParent: Node,
     newParent: Node,
-    session?: Session,
+    session: Session,
   ): Promise<void> {
     const newLog = new NodeMovingLog();
 
     newLog.timestamp = Date.now();
+    newLog.session = session;
     newLog.node = node;
     newLog.oldParent = oldParent;
     newLog.newParent = newParent;
-    newLog.session = session;
 
     await this.nodeMovingLogRepo.save(newLog);
   }
 
   /**
-   * Creates a new Link log entry.
+   * Creates a new link log entry.
    */
   async createLinkLog(link: Link, session?: Session): Promise<void> {
     const newLog = new LinkLog();
 
     newLog.timestamp = Date.now();
-    newLog.link = link;
     newLog.session = session;
+    newLog.link = link;
 
-    await this.nodeLogRepo.save(newLog);
+    await this.linkLogRepo.save(newLog);
   }
 
   /**
-   * Creates a new node Moving log entry.
+   * Creates a new share log entry.
    */
-  async createShareLog(share: Share, session?: Session): Promise<void> {
+  async createShareLog(share: Share, session: Session): Promise<void> {
     const newLog = new ShareLog();
+
     newLog.timestamp = Date.now();
-    newLog.share = share;
     newLog.session = session;
+    newLog.share = share;
+
     await this.shareLogRepo.save(newLog);
   }
 }

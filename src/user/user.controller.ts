@@ -18,11 +18,7 @@ import {
 import { UserService } from './user.service';
 import { res, ResBody } from '../utils/communication';
 import { Request } from 'express';
-import {
-  getHeaderSessionId,
-  getSession,
-  getSessionUser,
-} from '../utils/session';
+import { getHeaderSessionId, getSession } from '../utils/session';
 
 @Controller('users')
 export class UserController {
@@ -66,13 +62,8 @@ export class UserController {
     @Req() req: Request,
     @Body() body: PreRegisterUserDto,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    const registerKey = await this.userService.preregister(
-      curUser,
-      session,
-      body,
-    );
+    const registerKey = await this.userService.preregister(session, body);
     return res('Successfully pre-registered a new user.', {
       registerKey: registerKey,
     });
@@ -95,9 +86,8 @@ export class UserController {
    */
   @Post('validate')
   async validate(@Req() req: Request, @Body() body: ValidateUserDto) {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.userService.validate(curUser, session, body);
+    await this.userService.validate(session, body);
     return res('Successfully validated a new user.', {});
   }
 
@@ -121,14 +111,8 @@ export class UserController {
     @Param('username') username: string,
     @Body() body: UpdateUserDto,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    const user = await this.userService.update(
-      curUser,
-      session,
-      username,
-      body,
-    );
+    const user = await this.userService.update(session, username, body);
     return res('Successfully updated user account data.', { user: user });
   }
 
@@ -141,9 +125,8 @@ export class UserController {
     @Req() req: Request,
     @Param('username') username: string,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    const user = await this.userService.delete(curUser, session, username);
+    const user = await this.userService.delete(session, username);
     return res('Successfully deleted user.', { user: user });
   }
 

@@ -21,7 +21,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { AccessLevel, Session, User } from '../user/user.entity';
 import { Link } from '../link/link.entity';
-import { ActivityType, NodeLog } from '../log/log.entity';
+import { NodeActivityType, NodeLog } from '../log/log.entity';
 import { LogService } from '../log/log.service';
 import { Share } from '../share/share.entity';
 import { UserService } from '../user/user.service';
@@ -29,6 +29,7 @@ import { FindTreeOptions } from 'typeorm/find-options/FindTreeOptions';
 
 export interface Logs {
   logs: NodeLog[];
+  parentLogs: NodeLog[];
   oldParentLogs: NodeLog[];
   newParentLogs: NodeLog[];
 }
@@ -233,13 +234,10 @@ export class FilesystemService implements OnModuleInit {
     moveFileFromTmpToPermanent(body.ref);
     await this.nodeRepo.save(newFile);
     await this.logService.createNodeLog(
-      ActivityType.FILE_UPLOAD,
       newFile,
       newFile.parent,
-      null,
-      curUser,
+      NodeActivityType.NODE_CREATION,
       session,
-      curUser,
     );
   }
 
@@ -264,13 +262,10 @@ export class FilesystemService implements OnModuleInit {
     });
     await this.nodeRepo.save(newFolder);
     await this.logService.createNodeLog(
-      ActivityType.FOLDER_CREATION,
       newFolder,
       newFolder.parent,
-      null,
-      curUser,
+      NodeActivityType.NODE_CREATION,
       session,
-      curUser,
     );
   }
 
@@ -278,18 +273,13 @@ export class FilesystemService implements OnModuleInit {
    * Updates a file node's reference (same as overwriting the file).
    * Moves an uploaded file from temporary folder to permanent folder.
    */
-  async updateRef(
-    curUser: User,
-    session: Session,
-    nodeId: number,
-    body: UpdateRefDto,
-  ) {
+  async updateRef(session: Session, nodeId: number, body: UpdateRefDto) {
     const node = await this.findOne({
       where: {
         id: nodeId,
         type: NodeType.FILE,
       },
-      relations: ['parent', 'owner'],
+      relations: ['parent'],
     });
 
     moveFileFromTmpToPermanent(body.newRef); // moving new file to permanent folder
@@ -300,13 +290,10 @@ export class FilesystemService implements OnModuleInit {
     await this.nodeRepo.save(node);
 
     await this.logService.createNodeLog(
-      ActivityType.FILE_OVERWRITE,
       node,
       node.parent,
-      null,
-      curUser,
+      NodeActivityType.NODE_OVERWRITE,
       session,
-      node.owner,
     );
   }
 
@@ -326,17 +313,12 @@ export class FilesystemService implements OnModuleInit {
   /**
    * Updates a node's parent (same as moving the node).
    */
-  async updateParent(
-    curUser: User,
-    session: Session,
-    nodeId: number,
-    body: UpdateParentDto,
-  ) {
+  async updateParent(session: Session, nodeId: number, body: UpdateParentDto) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
-      relations: ['parent', 'owner'],
+      relations: ['parent'],
     });
     const oldParent = node.parent;
 
@@ -350,28 +332,23 @@ export class FilesystemService implements OnModuleInit {
 
     await this.nodeRepo.save(node);
 
-    await this.logService.createNodeLog(
-      node.type === NodeType.FILE
-        ? ActivityType.FILE_MOVING
-        : ActivityType.FOLDER_MOVING,
+    await this.logService.createNodeMovingLog(
       node,
       oldParent,
       node.parent,
-      curUser,
       session,
-      node.owner,
     );
   }
 
   /**
    * Deletes a node by id and all of its descendant.
    */
-  async delete(curUser: User, session: Session, nodeId: number) {
+  async delete(session: Session, nodeId: number) {
     const node = await this.findOne({
       where: {
         id: nodeId,
       },
-      relations: ['parent', 'owner'],
+      relations: ['parent'],
     });
     const descendants = await this.nodeRepo.findDescendants(node);
 
@@ -382,15 +359,10 @@ export class FilesystemService implements OnModuleInit {
     }
 
     await this.logService.createNodeLog(
-      node.type === NodeType.FILE
-        ? ActivityType.FILE_DELETION
-        : ActivityType.FOLDER_DELETION,
       node,
       node.parent,
-      null,
-      curUser,
+      NodeActivityType.NODE_DELETION,
       session,
-      node.owner,
     );
 
     // removes the target node from database with all its descendants
@@ -413,29 +385,24 @@ export class FilesystemService implements OnModuleInit {
    * Find the Node entity of the file in the database
    * Return the file content of the file.
    */
-  async getFile(
-    curUser: User,
-    session: Session,
-    nodeId: number,
-  ): Promise<StreamableFile> {
+  async getFile(session: Session, nodeId: number): Promise<StreamableFile> {
     const node = await this.findOne({
       where: { id: nodeId, type: NodeType.FILE },
-      relations: ['parent', 'owner'],
+      relations: ['parent'],
     });
 
     const path = join(process.cwd(), DiskFolders.PERM, node.ref);
 
     if (existsSync(path)) {
       const file = createReadStream(path);
+
       await this.logService.createNodeLog(
-        ActivityType.FILE_DOWNLOAD,
         node,
         node.parent,
-        null,
-        curUser,
+        NodeActivityType.NODE_DOWNLOAD,
         session,
-        node.owner,
       );
+
       return new StreamableFile(file);
     }
     throw err(Status.ERROR_FILE_NOT_FOUND, 'No file found on disk.');
@@ -447,10 +414,11 @@ export class FilesystemService implements OnModuleInit {
   async findLogs(nodeId: number): Promise<Logs> {
     const node = await this.findOne({
       where: { id: nodeId },
-      relations: ['logs', 'oldParentLogs', 'newParentLogs'],
+      relations: ['logs', 'parentLogs', 'oldParentLogs', 'newParentLogs'],
     });
     return {
       logs: node.logs,
+      parentLogs: node.parentLogs,
       oldParentLogs: node.oldParentLogs,
       newParentLogs: node.newParentLogs,
     };

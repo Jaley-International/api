@@ -128,9 +128,8 @@ export class FilesystemController {
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateRefDto,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.fileService.updateRef(curUser, session, nodeId, body);
+    await this.fileService.updateRef(session, nodeId, body);
     return res('Successfully overwritten file.', {});
   }
 
@@ -155,9 +154,8 @@ export class FilesystemController {
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Body() body: UpdateParentDto,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.fileService.updateParent(curUser, session, nodeId, body);
+    await this.fileService.updateParent(session, nodeId, body);
     return res('Successfully moved node to another parent.', {});
   }
 
@@ -169,9 +167,8 @@ export class FilesystemController {
     @Req() req: Request,
     @Param('nodeId', ParseIntPipe) nodeId: number,
   ): Promise<ResBody> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
-    await this.fileService.delete(curUser, session, nodeId);
+    await this.fileService.delete(session, nodeId);
     return res('Successfully deleted node.', {});
   }
 
@@ -199,7 +196,6 @@ export class FilesystemController {
     @Param('nodeId', ParseIntPipe) nodeId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const curUser = await getSessionUser(req);
     const session = await getSession(req);
     // setting encoding method to ensure loyal data retransmission
     res.set({
@@ -207,7 +203,7 @@ export class FilesystemController {
     });
     // returns directly the encrypted file,
     // not encapsulated in a response body like the other routes
-    return await this.fileService.getFile(curUser, session, nodeId);
+    return await this.fileService.getFile(session, nodeId);
   }
 
   /**
@@ -219,6 +215,9 @@ export class FilesystemController {
     return res('Successfully got node logs.', { logs: logs });
   }
 
+  /**
+   * Gets all shares of the target node.
+   */
   @Get(':nodeId/shares')
   async getSharesByNode(@Param('nodeId') nodeId: number): Promise<ResBody> {
     const shares = await this.fileService.findShares(nodeId);

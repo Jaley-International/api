@@ -96,7 +96,6 @@ export class UserService {
    * Throws an exception if the email or username is already used.
    */
   async preregister(
-    curUser: User,
     session: Session,
     body: PreRegisterUserDto,
   ): Promise<string> {
@@ -127,8 +126,8 @@ export class UserService {
 
     // new log entry for user creation
     await this.logService.createUserLog(
-      UserActivityType.USER_CREATION,
       newUser,
+      UserActivityType.USER_CREATION,
       session,
     );
 
@@ -157,8 +156,8 @@ export class UserService {
         await this.userRepo.save(curUser);
 
         await this.logService.createUserLog(
-          UserActivityType.USER_REGISTRATION,
           curUser,
+          UserActivityType.USER_REGISTRATION,
         );
 
         // TODO replace it with the actual signature (got from client as in whitepaper 4.1)
@@ -178,7 +177,7 @@ export class UserService {
    * Validates a new user.
    * Saves the user's public sharing key signature.
    */
-  async validate(curUser: User, session: Session, body: ValidateUserDto) {
+  async validate(session: Session, body: ValidateUserDto) {
     const user = await this.userRepo.findOne({
       where: { username: body.username },
     });
@@ -189,8 +188,9 @@ export class UserService {
       await this.userRepo.save(user);
 
       await this.logService.createUserLog(
-        UserActivityType.USER_VALIDATION,
         user,
+        UserActivityType.USER_VALIDATION,
+        session,
       );
     } else {
       throw err(
@@ -205,7 +205,6 @@ export class UserService {
    * Returns the updated user.
    */
   async update(
-    curUser: User,
     session: Session,
     username: string,
     body: UpdateUserDto,
@@ -228,8 +227,8 @@ export class UserService {
     await this.userRepo.save(user);
 
     await this.logService.createUserLog(
-      UserActivityType.USER_UPDATE,
       user,
+      UserActivityType.USER_UPDATE,
       session,
     );
 
@@ -241,11 +240,7 @@ export class UserService {
    * leaving all of that user file system's nodes without any owner.
    * Returns the deleted user.
    */
-  async delete(
-    curUser: User,
-    session: Session,
-    username: string,
-  ): Promise<User> {
+  async delete(session: Session, username: string): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
       relations: ['nodes'],
@@ -257,8 +252,8 @@ export class UserService {
       await nodeRepo.save(node);
     }
     await this.logService.createUserLog(
-      UserActivityType.USER_DELETION,
       user,
+      UserActivityType.USER_DELETION,
       session,
     );
     return await this.userRepo.remove(user);
