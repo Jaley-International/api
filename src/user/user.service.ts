@@ -28,20 +28,12 @@ import { err, Status } from '../utils/communication';
 import { MailService } from '../mail/mail.service';
 import forge from 'node-forge';
 import { LogService } from '../log/log.service';
-import { ActivityType, NodeLog, UserLog } from '../log/log.entity';
+import { UserActivityType, UserLog } from '../log/log.entity';
 
 export interface LoginDetails {
   user: User;
   encryptedSessionIdentifier: string;
   sessionExpire: number;
-}
-
-export interface Logs {
-  subjectLogs: UserLog[];
-  performerLogs: UserLog[];
-  nodeOwnerLogs: NodeLog[];
-  nodeCurUserLogs: NodeLog[];
-  nodeSharedWithLogs: NodeLog[];
 }
 
 export interface SharingKeys {
@@ -135,9 +127,8 @@ export class UserService {
 
     // new log entry for user creation
     await this.logService.createUserLog(
-      ActivityType.USER_CREATION,
+      UserActivityType.USER_CREATION,
       newUser,
-      curUser,
       session,
     );
 
@@ -166,8 +157,7 @@ export class UserService {
         await this.userRepo.save(curUser);
 
         await this.logService.createUserLog(
-          ActivityType.USER_REGISTRATION,
-          curUser,
+          UserActivityType.USER_REGISTRATION,
           curUser,
         );
 
@@ -199,10 +189,8 @@ export class UserService {
       await this.userRepo.save(user);
 
       await this.logService.createUserLog(
-        ActivityType.USER_VALIDATION,
+        UserActivityType.USER_VALIDATION,
         user,
-        curUser,
-        session,
       );
     } else {
       throw err(
@@ -240,9 +228,8 @@ export class UserService {
     await this.userRepo.save(user);
 
     await this.logService.createUserLog(
-      ActivityType.USER_UPDATE,
+      UserActivityType.USER_UPDATE,
       user,
-      curUser,
       session,
     );
 
@@ -270,9 +257,8 @@ export class UserService {
       await nodeRepo.save(node);
     }
     await this.logService.createUserLog(
-      ActivityType.USER_DELETION,
+      UserActivityType.USER_DELETION,
       user,
-      curUser,
       session,
     );
     return await this.userRepo.remove(user);
@@ -321,12 +307,6 @@ export class UserService {
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
         await this.sessionRepo.save(session);
-        await this.logService.createUserLog(
-          ActivityType.USER_LOGIN,
-          user,
-          user,
-          session,
-        );
         // returning encryption keys and connection information
         return {
           user: user,
@@ -380,24 +360,12 @@ export class UserService {
   /**
    * Returns all logs related to a user.
    */
-  async findLogs(username: string): Promise<Logs> {
+  async findLogs(username: string): Promise<UserLog[]> {
     const user = await this.findOne({
       where: { username: username },
-      relations: [
-        'subjectLogs',
-        'performerLogs',
-        'nodeOwnerLogs',
-        'nodeCurUserLogs',
-        'nodeSharedWithLogs',
-      ],
+      relations: ['logs'],
     });
-    return {
-      subjectLogs: user.subjectLogs,
-      performerLogs: user.performerLogs,
-      nodeOwnerLogs: user.nodeOwnerLogs,
-      nodeCurUserLogs: user.nodeCurUserLogs,
-      nodeSharedWithLogs: user.nodeSharedWithLogs,
-    };
+    return user.logs;
   }
 
   /**
