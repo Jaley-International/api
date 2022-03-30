@@ -25,15 +25,15 @@ export abstract class Log {
 
   @Column({ type: 'bigint', update: false })
   timestamp: number;
-
-  @ManyToOne(() => Session, (session) => session.logs, {
-    onDelete: 'CASCADE',
-  })
-  session: Session; // The session of the activity performer.
 }
 
 @Entity()
 export class UserLog extends Log {
+  @ManyToOne(() => Session, (session) => session.userLogs, {
+    onDelete: 'CASCADE',
+  })
+  session: Session; // The session of the activity performer.
+
   @ManyToOne(() => User, (user) => user.logs, { onDelete: 'CASCADE' })
   subject: User; // The user who is the subject of an activity, e.g., the user who is created by admin.
   // Sometimes the performer and the subject are the same person, e.g., the user who logs in.
@@ -44,6 +44,11 @@ export class UserLog extends Log {
 
 @Entity()
 export class NodeLog extends Log {
+  @ManyToOne(() => Session, (session) => session.nodeLogs, {
+    onDelete: 'CASCADE',
+  })
+  session: Session; // The session of the activity performer.
+
   @ManyToOne(() => Node, (node) => node.logs, { onDelete: 'CASCADE' })
   node: Node;
 
@@ -56,6 +61,11 @@ export class NodeLog extends Log {
 
 @Entity()
 export class NodeMovingLog extends Log {
+  @ManyToOne(() => Session, (session) => session.nodeMovingLogs, {
+    onDelete: 'CASCADE',
+  })
+  session: Session; // The session of the activity performer.
+
   @ManyToOne(() => Node, (node) => node.logs, { onDelete: 'CASCADE' })
   node: Node;
 
@@ -68,12 +78,22 @@ export class NodeMovingLog extends Log {
 
 @Entity()
 export class LinkLog extends Log {
+  @ManyToOne(() => Session, (session) => session.linkLogs, {
+    onDelete: 'CASCADE',
+  })
+  session: Session; // The session of the activity performer.
+
   @ManyToOne(() => Link, (link) => link.logs, { onDelete: 'CASCADE' })
   link: Link;
 }
 
 @Entity()
 export class ShareLog extends Log {
+  @ManyToOne(() => Session, (session) => session.shareLogs, {
+    onDelete: 'CASCADE',
+  })
+  session: Session; // The session of the activity performer.
+
   @ManyToOne(() => Share, (share) => share.logs, { onDelete: 'CASCADE' })
   share: Share;
 }

@@ -7,7 +7,13 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Node } from '../filesystem/filesystem.entity';
-import { Log, UserLog } from '../log/log.entity';
+import {
+  LinkLog,
+  NodeLog,
+  NodeMovingLog,
+  ShareLog,
+  UserLog,
+} from '../log/log.entity';
 import { Share } from '../share/share.entity';
 
 export enum AccessLevel {
@@ -123,6 +129,18 @@ export class Session {
 
   // logs
 
-  @OneToMany(() => Log, (log) => log.session)
-  logs: Log[];
+  @OneToMany(() => UserLog, (userLog) => userLog.session)
+  userLogs: UserLog[];
+
+  @OneToMany(() => NodeLog, (nodeLog) => nodeLog.session)
+  nodeLogs: NodeLog[];
+
+  @OneToMany(() => NodeMovingLog, (nodeMovingLog) => nodeMovingLog.session)
+  nodeMovingLogs: NodeMovingLog[];
+
+  @OneToMany(() => LinkLog, (linkLog) => linkLog.session)
+  linkLogs: LinkLog[];
+
+  @OneToMany(() => ShareLog, (shareLog) => shareLog.session)
+  shareLogs: ShareLog[];
 }
