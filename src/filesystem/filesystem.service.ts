@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, TreeRepository } from 'typeorm';
+import { FindOneOptions, getConnection, TreeRepository } from 'typeorm';
 import {
   CreateFileDto,
   CreateFolderDto,
@@ -92,6 +92,9 @@ export class FilesystemService implements OnModuleInit {
     const node = await this.nodeRepo.findOne(options);
     if (!node) {
       throw err(Status.ERROR_NODE_NOT_FOUND, 'Node not found.');
+    }
+    if (node.deleted) {
+      throw err(Status.ERROR_NODE_DELETED, 'Node has been deleted.');
     }
     return node;
   }
@@ -350,12 +353,32 @@ export class FilesystemService implements OnModuleInit {
       },
       relations: ['parent'],
     });
+
+    // set node as deleted
+    node.deleted = true;
+    await this.nodeRepo.save(node);
+
+    const linkRepo = getConnection().getRepository(Link);
+    // remove node's links
+    for (const link of node.links) {
+      await linkRepo.remove(link);
+    }
+
     const descendants = await this.nodeRepo.findDescendants(node);
 
-    // removes the files stored on server disk
-    // for the nodes representing a file
     for (const descendant of descendants) {
+      // removes the files stored on server disk
+      // for the nodes representing a file
       deletePermanentFile(descendant);
+
+      // set each descendant as deleted
+      descendant.deleted = true;
+      await this.nodeRepo.save(descendant);
+
+      // remove each descendant's links
+      for (const link of descendant.links) {
+        await linkRepo.remove(link);
+      }
     }
 
     await this.logService.createNodeLog(
@@ -364,10 +387,6 @@ export class FilesystemService implements OnModuleInit {
       NodeActivityType.NODE_DELETION,
       session,
     );
-
-    // removes the target node from database with all its descendants
-    // because their onDelete option should be set to CASCADE
-    await this.nodeRepo.remove(node);
   }
 
   /**

@@ -45,6 +45,9 @@ export class Node {
   @Column()
   parentEncryptedKey: string;
 
+  @Column({ default: false })
+  deleted: boolean;
+
   @ManyToOne(() => User, (user) => user.nodes)
   owner: User;
 

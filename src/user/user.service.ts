@@ -76,6 +76,9 @@ export class UserService {
     if (!user) {
       throw err(Status.ERROR_USER_NOT_FOUND, 'User not found.');
     }
+    if (user.userStatus === UserStatus.DELETED) {
+      throw err(Status.ERROR_USER_DELETED, 'User has been deleted.');
+    }
     return user;
   }
 
@@ -245,18 +248,29 @@ export class UserService {
       where: { username: username },
       relations: ['nodes'],
     });
-    // removing nodes ownership
+
+    // set user status as deleted
+    user.userStatus = UserStatus.DELETED;
+    await this.userRepo.save(user);
+
+    // remove nodes ownership
     const nodeRepo = getConnection().getRepository(Node);
     for (const node of user.nodes) {
       node.owner = null;
       await nodeRepo.save(node);
     }
+    // remove user related sessions
+    for (const session of user.sessions) {
+      await this.sessionRepo.remove(session);
+    }
+
     await this.logService.createUserLog(
       user,
       UserActivityType.USER_DELETION,
       session,
     );
-    return await this.userRepo.remove(user);
+
+    return user;
   }
 
   /**
