@@ -16,7 +16,10 @@ export class Link {
   @Column()
   iv: string;
 
-  @ManyToOne(() => Node, (node) => node.links, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Node, (node) => node.links, {
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
   node: Node;
 
   // logs

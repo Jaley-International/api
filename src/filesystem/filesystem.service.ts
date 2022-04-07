@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, getConnection, TreeRepository } from 'typeorm';
+import { FindOneOptions, TreeRepository } from 'typeorm';
 import {
   CreateFileDto,
   CreateFolderDto,
@@ -351,19 +351,16 @@ export class FilesystemService implements OnModuleInit {
       where: {
         id: nodeId,
       },
-      relations: ['parent'],
+      relations: ['parent', 'links'],
     });
 
     // set node as deleted
     node.deleted = true;
-    await this.nodeRepo.save(node);
 
-    const linkRepo = getConnection().getRepository(Link);
     // remove node's links
-    for (const link of node.links) {
-      await linkRepo.remove(link);
-    }
+    node.links = [];
 
+    // get node's descendants
     const descendants = await this.nodeRepo.findDescendants(node);
 
     for (const descendant of descendants) {
@@ -373,14 +370,18 @@ export class FilesystemService implements OnModuleInit {
 
       // set each descendant as deleted
       descendant.deleted = true;
-      await this.nodeRepo.save(descendant);
 
       // remove each descendant's links
-      for (const link of descendant.links) {
-        await linkRepo.remove(link);
-      }
+      descendant.links = [];
+
+      // save descendant
+      await this.nodeRepo.save(descendant);
     }
 
+    // save node
+    await this.nodeRepo.save(node);
+
+    // create log
     await this.logService.createNodeLog(
       node,
       node.parent,

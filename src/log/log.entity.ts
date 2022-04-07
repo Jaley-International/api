@@ -10,6 +10,7 @@ export enum UserActivityType {
   USER_VALIDATION = 'USER_VALIDATION',
   USER_UPDATE = 'USER_UPDATE',
   USER_DELETION = 'USER_DELETION',
+  USER_LOGIN = 'USER_LOGIN',
 }
 
 export enum NodeActivityType {

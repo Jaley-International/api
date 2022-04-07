@@ -246,12 +246,11 @@ export class UserService {
   async delete(session: Session, username: string): Promise<User> {
     const user = await this.findOne({
       where: { username: username },
-      relations: ['nodes'],
+      relations: ['nodes', 'sessions'],
     });
 
     // set user status as deleted
     user.userStatus = UserStatus.DELETED;
-    await this.userRepo.save(user);
 
     // remove nodes ownership
     const nodeRepo = getConnection().getRepository(Node);
@@ -259,11 +258,16 @@ export class UserService {
       node.owner = null;
       await nodeRepo.save(node);
     }
+
     // remove user related sessions
     for (const session of user.sessions) {
       await this.sessionRepo.remove(session);
     }
 
+    // save user
+    await this.userRepo.save(user);
+
+    // create log
     await this.logService.createUserLog(
       user,
       UserActivityType.USER_DELETION,
@@ -316,6 +320,14 @@ export class UserService {
         session.ip = '0.0.0.0'; //TODO get user ip
         session.user = user;
         await this.sessionRepo.save(session);
+
+        // create log
+        await this.logService.createUserLog(
+          user,
+          UserActivityType.USER_LOGIN,
+          session,
+        );
+
         // returning encryption keys and connection information
         return {
           user: user,
